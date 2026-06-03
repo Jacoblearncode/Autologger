@@ -13,9 +13,9 @@ class AutoCareCloudinary : Application() {
 
     private fun initializeCloudinary() {
         val config = HashMap<String, String>()
-        config["cloud_name"] = "dt2vnetaw"
-        config["api_key"] = "819723664299813"
-        config["api_secret"] = "wR2kaZn98ektecTnPLt0c9bBpwo"
+        config["cloud_name"] = "dcc69stmc"
+        config["api_key"] = "179157862627134"
+        config["api_secret"] = "eFMpSW7Vh7U2561rUlATnQpjt5E"
         MediaManager.init(this, config)
     }
 }

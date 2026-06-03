@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "807465512544",
-    "project_id": "autocare-83096",
-    "storage_bucket": "autocare-83096.firebasestorage.app"
+    "project_number": "341070687885",
+    "project_id": "autologger-583c7",
+    "storage_bucket": "autologger-583c7.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:807465512544:android:f1fbffbf0c8130a6e81d05",
+        "mobilesdk_app_id": "1:341070687885:android:3ee68529663e7cbde6bcc4",
         "android_client_info": {
           "package_name": "com.nibm.autocare"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAJgPYm-GokKWmYrc3uaHAADeM1Nbpu10Q"
+          "current_key": "AIzaSyAb5QFQLBwa8Gpz8T8D6-HUGybd1CNDc5U"
         }
       ],
       "services": {
