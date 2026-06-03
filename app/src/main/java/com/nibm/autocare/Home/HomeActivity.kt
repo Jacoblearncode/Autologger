@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.Query
 import com.google.firebase.database.ValueEventListener
@@ -38,6 +39,9 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var originalVehicleList: MutableList<Vehicle>
     private var isSearchActive = false
 
+    private var vehiclesListener: ValueEventListener? = null
+    private var vehiclesDbRef: DatabaseReference? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
@@ -52,7 +56,6 @@ class HomeActivity : AppCompatActivity() {
 
         setupSearch()
         fetchUsername()
-        fetchVehicles()
 
         // Set up click listeners
         findViewById<View>(R.id.ivMenu).setOnClickListener { showMenu(it) }
@@ -62,6 +65,19 @@ class HomeActivity : AppCompatActivity() {
         findViewById<View>(R.id.llAddService).setOnClickListener {
             startActivity(Intent(this, AddServiceActivity::class.java))
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (auth.currentUser != null) {
+            attachVehiclesListener()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        vehiclesListener?.let { vehiclesDbRef?.removeEventListener(it) }
+        vehiclesListener = null
     }
 
     private fun setupSearch() {
@@ -204,50 +220,49 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun fetchVehicles() {
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            val userId = currentUser.uid
-            val vehiclesRef = database.reference.child("users_vehicles").child(userId)
+    private fun attachVehiclesListener() {
+        val currentUser = auth.currentUser ?: return
+        val userId = currentUser.uid
 
-            vehiclesRef.addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    originalVehicleList.clear()
+        vehiclesDbRef = database.reference.child("users_vehicles").child(userId)
+        vehiclesListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                originalVehicleList.clear()
+                vehicleList.clear()
+
+                for (vehicleSnapshot in snapshot.children) {
+                    val registrationNumber = vehicleSnapshot.child("registrationNumber").getValue(String::class.java)
+                    val brand = vehicleSnapshot.child("brand").getValue(String::class.java)
+                    val manufacturedYear = vehicleSnapshot.child("manufacturedYear").getValue(String::class.java)
+                    val model = vehicleSnapshot.child("model").getValue(String::class.java)
+
+                    if (registrationNumber != null && brand != null && manufacturedYear != null && model != null) {
+                        val vehicle = Vehicle(
+                            registrationNumber,
+                            brand,
+                            manufacturedYear,
+                            model,
+                            vehicleSnapshot.child("currentMileage").getValue(Int::class.java) ?: 0,
+                            vehicleSnapshot.child("weeklyRidingDistance").getValue(Int::class.java) ?: 0
+                        )
+                        originalVehicleList.add(vehicle)
+                    }
+                }
+
+                if (!isSearchActive) {
                     vehicleList.clear()
-
-                    for (vehicleSnapshot in snapshot.children) {
-                        val registrationNumber = vehicleSnapshot.child("registrationNumber").getValue(String::class.java)
-                        val brand = vehicleSnapshot.child("brand").getValue(String::class.java)
-                        val manufacturedYear = vehicleSnapshot.child("manufacturedYear").getValue(String::class.java)
-                        val model = vehicleSnapshot.child("model").getValue(String::class.java)
-
-                        if (registrationNumber != null && brand != null && manufacturedYear != null && model != null) {
-                            val vehicle = Vehicle(
-                                registrationNumber,
-                                brand,
-                                manufacturedYear,
-                                model,
-                                vehicleSnapshot.child("currentMileage").getValue(Int::class.java) ?: 0,
-                                vehicleSnapshot.child("weeklyRidingDistance").getValue(Int::class.java) ?: 0
-                            )
-                            originalVehicleList.add(vehicle)
-                        }
-                    }
-
-                    if (!isSearchActive) {
-                        vehicleList.clear()
-                        vehicleList.addAll(originalVehicleList)
-                    }
-
-                    val adapter = VehicleAdapter(vehicleList)
-                    lvVehicles.adapter = adapter
+                    vehicleList.addAll(originalVehicleList)
                 }
 
-                override fun onCancelled(error: DatabaseError) {
-                    Toast.makeText(this@HomeActivity, "Failed to fetch vehicles: ${error.message}", Toast.LENGTH_SHORT).show()
-                }
-            })
+                val adapter = VehicleAdapter(vehicleList)
+                lvVehicles.adapter = adapter
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@HomeActivity, "Failed to fetch vehicles: ${error.message}", Toast.LENGTH_SHORT).show()
+            }
         }
+        vehiclesDbRef?.addValueEventListener(vehiclesListener!!)
     }
 
     private fun getVehicleId(registrationNumber: String, callback: (String?) -> Unit) {

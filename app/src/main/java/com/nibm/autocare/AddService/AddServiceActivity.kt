@@ -5,12 +5,15 @@ import android.app.DatePickerDialog
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.*
+import java.io.ByteArrayOutputStream
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -431,7 +434,12 @@ class AddServiceActivity : AppCompatActivity() {
             "Uploading 0 of $totalPhotosToUpload photos..."
 
         uploadedPhotos.forEachIndexed { index, uri ->
-            MediaManager.get().upload(uri)
+            val imageBytes = compressImage(uri) ?: run {
+                uploadedPhotoCount++
+                Toast.makeText(this, "Failed to read photo ${index + 1}", Toast.LENGTH_SHORT).show()
+                return@forEachIndexed
+            }
+            MediaManager.get().upload(imageBytes)
                 .option("folder", "Home/AutoCare")
                 .option("public_id", "service_${userId}_${registrationNumber}_${dateKey}_$index")
                 .callback(object : UploadCallback {
@@ -521,5 +529,42 @@ class AddServiceActivity : AppCompatActivity() {
         }
         startActivity(intent)
         finish()
+    }
+
+    private fun compressImage(uri: Uri): ByteArray? {
+        return try {
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            }
+
+            options.inSampleSize = calculateInSampleSize(options, 1920, 1920)
+            options.inJustDecodeBounds = false
+
+            val bitmap = contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            } ?: return null
+
+            ByteArrayOutputStream().use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
+                out.toByteArray()
+            }
+        } catch (e: Exception) {
+            Log.e("Compress", "Failed to compress image: ${e.message}")
+            null
+        }
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height, width) = options.outHeight to options.outWidth
+        var inSampleSize = 1
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight = height / 2
+            val halfWidth = width / 2
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
     }
 }
