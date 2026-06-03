@@ -42,3 +42,9 @@ AutoCare is an Android mobile app built to help vehicle owners track maintenance
 1. Clone the repository:
 ```bash
 git clone https://github.com/Hasith819/AutoCare-Android-App.git
+
+2. Wait for gradle to build
+
+3.Setup firebase settings, google-services.json configs are according to your app
+
+4. Run the app
