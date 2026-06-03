@@ -20,8 +20,7 @@ import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.nibm.autocare.Vehicle.AddVehicleActivity
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -36,6 +35,7 @@ class ServiceRecordActivity : AppCompatActivity() {
     private lateinit var pdfGenerator: PdfGenerator
     private lateinit var servicesRef: DatabaseReference
     private var currentServiceRecords = mutableListOf<ServiceRecord>()
+    private var servicesListener: ValueEventListener? = null
 
     companion object {
         private const val STORAGE_PERMISSION_CODE = 1001
@@ -94,8 +94,19 @@ class ServiceRecordActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        servicesListener?.let { servicesRef.removeEventListener(it) }
+        servicesListener = null
+    }
+
+    override fun onStart() {
+        super.onStart()
+        fetchServiceRecords()
+    }
+
     private fun fetchServiceRecords() {
-        servicesRef.addValueEventListener(object : ValueEventListener {
+        servicesListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 currentServiceRecords.clear()
                 for (serviceSnapshot in snapshot.children) {
@@ -110,7 +121,8 @@ class ServiceRecordActivity : AppCompatActivity() {
             override fun onCancelled(error: DatabaseError) {
                 showToast("Failed to fetch services: ${error.message}")
             }
-        })
+        }
+        servicesRef.addValueEventListener(servicesListener!!)
     }
 
     private fun parseServiceRecord(serviceSnapshot: DataSnapshot): ServiceRecord? {
@@ -158,20 +170,13 @@ class ServiceRecordActivity : AppCompatActivity() {
             .create()
         progressDialog.show()
 
-        CoroutineScope(Dispatchers.IO).launch {
-            pdfGenerator.generateServiceRecordPdf(vehicleRegistration, currentServiceRecords) { filePath, success ->
-                runOnUiThread {
-                    progressDialog.dismiss()
-                    if (success && filePath != null) {
-                        sharePdfFile(filePath)
-                    } else {
-                        Toast.makeText(
-                            this@ServiceRecordActivity,
-                            "Failed to generate PDF",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
+        lifecycleScope.launch {
+            val (filePath, success) = pdfGenerator.generateServiceRecordPdf(vehicleRegistration, currentServiceRecords)
+            progressDialog.dismiss()
+            if (success && filePath != null) {
+                sharePdfFile(filePath)
+            } else {
+                Toast.makeText(this@ServiceRecordActivity, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
             }
         }
     }

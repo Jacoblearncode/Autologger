@@ -18,14 +18,15 @@ import java.io.FileOutputStream
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class PdfGenerator(private val context: Context) {
 
-    fun generateServiceRecordPdf(
+    suspend fun generateServiceRecordPdf(
         vehicleRegistration: String,
-        serviceRecords: List<ServiceRecordActivity.ServiceRecord>,
-        callback: (filePath: String?, success: Boolean) -> Unit
-    ) {
+        serviceRecords: List<ServiceRecordActivity.ServiceRecord>
+    ): Pair<String?, Boolean> = withContext(Dispatchers.IO) {
         try {
             val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
             val fileName = "ServiceRecords_${vehicleRegistration}_$timeStamp.pdf"
@@ -67,10 +68,10 @@ class PdfGenerator(private val context: Context) {
 
             document.close()
 
-            callback(file.absolutePath, true)
+            Pair(file.absolutePath, true)
         } catch (e: Exception) {
             e.printStackTrace()
-            callback(null, false)
+            Pair(null, false)
         }
     }
 

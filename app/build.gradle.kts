@@ -80,6 +80,7 @@ dependencies {
     implementation ("com.cloudinary:cloudinary-android:2.3.1")
 
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 
     implementation ("com.itextpdf:itext7-core:7.2.3")
     implementation ("com.itextpdf:html2pdf:4.0.3")
