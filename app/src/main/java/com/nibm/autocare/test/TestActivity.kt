@@ -16,8 +16,6 @@ import com.bumptech.glide.Glide
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.ErrorInfo
 import com.cloudinary.android.callback.UploadCallback
-import java.util.HashMap
-
 class TestActivity : AppCompatActivity() {
 
     private lateinit var imageView: ImageView
@@ -37,13 +35,6 @@ class TestActivity : AppCompatActivity() {
         uploadButton = findViewById(R.id.uploadButton)
         urlTextView = findViewById(R.id.urlTextView)
         uploadProgressBar = findViewById(R.id.uploadProgressBar)
-
-        // Initialize Cloudinary
-        val config = HashMap<String, String>()
-        config["cloud_name"] = "dt2vnetaw" // Replace with your Cloud Name
-        config["api_key"] = "819723664299813" // Replace with your API Key
-        config["api_secret"] = "wR2kaZn98ektecTnPLt0c9bBpwo"
-        MediaManager.init(this, config)
 
         // Button to select an image from the gallery
         selectImageButton.setOnClickListener {
