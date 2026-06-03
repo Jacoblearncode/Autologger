@@ -72,13 +72,17 @@
                 android:textColor="@color/black"
                 android:layout_marginTop="30dp" />
 
-            <Spinner
-                android:id="@+id/spinnerBrand"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="12dp"
                 android:background="@drawable/edit_text_background"
-                android:layout_marginTop="8dp" />
+                android:layout_marginTop="8dp">
+                <Spinner
+                    android:id="@+id/spinnerBrand"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp" />
+            </LinearLayout>
 
             <!-- Vehicle Model Dropdown -->
             <TextView
@@ -89,13 +93,17 @@
                 android:textColor="@color/black"
                 android:layout_marginTop="30dp" />
 
-            <Spinner
-                android:id="@+id/spinnerModel"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="12dp"
                 android:background="@drawable/edit_text_background"
-                android:layout_marginTop="8dp" />
+                android:layout_marginTop="8dp">
+                <Spinner
+                    android:id="@+id/spinnerModel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp" />
+            </LinearLayout>
 
             <!-- Manufactured Year -->
             <TextView
