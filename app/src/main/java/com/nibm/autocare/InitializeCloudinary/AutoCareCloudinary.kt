@@ -1,4 +1,4 @@
-package com.nibm.autocare
+package com.nibm.autocare.InitializeCloudinary
 
 import android.app.Application
 import com.cloudinary.android.MediaManager
