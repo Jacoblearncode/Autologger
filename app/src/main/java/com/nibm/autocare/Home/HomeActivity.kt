@@ -18,6 +18,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -29,6 +34,10 @@ import com.nibm.autocare.Authentication.LoginActivity
 import com.nibm.autocare.Vehicle.AddVehicleActivity
 
 class HomeActivity : AppCompatActivity() {
+
+    companion object {
+        private const val REQUEST_NOTIFICATION_PERMISSION = 2001
+    }
 
     private val vehicleList = mutableListOf<Vehicle>()
     private lateinit var tvGreeting: TextView
@@ -71,6 +80,21 @@ class HomeActivity : AppCompatActivity() {
         super.onStart()
         if (auth.currentUser != null) {
             attachVehiclesListener()
+            requestNotificationPermissionIfNeeded()
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    REQUEST_NOTIFICATION_PERMISSION
+                )
+            }
         }
     }
 

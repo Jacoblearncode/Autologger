@@ -8,6 +8,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Spinner
+import com.nibm.autocare.Reminder.ReminderScheduler
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -245,6 +246,10 @@ class AddVehicleActivity : AppCompatActivity() {
         if (newVehicleId != null) {
             usersVehiclesRef.child(newVehicleId).setValue(vehicle)
                 .addOnSuccessListener {
+                    ReminderScheduler.scheduleForVehicle(
+                        this, registrationNumber,
+                        currentMileage.toInt(), weeklyRidingDistance.toInt()
+                    )
                     Toast.makeText(this, "Vehicle saved successfully", Toast.LENGTH_SHORT).show()
                     navigateToHome()
                 }

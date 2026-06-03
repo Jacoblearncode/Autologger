@@ -29,6 +29,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.nibm.autocare.Reminder.ReminderScheduler
 import com.nibm.autocare.Vehicle.AddVehicleActivity
 import com.nibm.autocare.adapter.UploadedPhotosAdapter
 import java.text.SimpleDateFormat
@@ -68,6 +69,9 @@ class AddServiceActivity : AppCompatActivity() {
     // Firebase
     private lateinit var auth: FirebaseAuth
     private lateinit var database: FirebaseDatabase
+
+    // Tracks weekly distance per registration so reminders can be scheduled
+    private val vehicleWeeklyDistances = mutableMapOf<String, Int>()
 
     // Photo handling
     private lateinit var uploadedPhotosAdapter: UploadedPhotosAdapter
@@ -194,9 +198,13 @@ class AddServiceActivity : AppCompatActivity() {
         vehiclesRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val vehicleList = mutableListOf<String>()
+                vehicleWeeklyDistances.clear()
                 snapshot.children.forEach { vehicleSnapshot ->
-                    vehicleSnapshot.child("registrationNumber").getValue(String::class.java)?.let {
-                        vehicleList.add(it)
+                    val reg = vehicleSnapshot.child("registrationNumber").getValue(String::class.java)
+                    if (reg != null) {
+                        vehicleList.add(reg)
+                        val weekly = vehicleSnapshot.child("weeklyRidingDistance").getValue(Int::class.java) ?: 0
+                        vehicleWeeklyDistances[reg] = weekly
                     }
                 }
 
@@ -413,6 +421,8 @@ class AddServiceActivity : AppCompatActivity() {
 
         serviceRef.setValue(serviceData)
             .addOnSuccessListener {
+                val weeklyDistance = vehicleWeeklyDistances[registrationNumber] ?: 0
+                ReminderScheduler.scheduleAfterService(this, registrationNumber, weeklyDistance)
                 if (uploadedPhotos.isNotEmpty()) {
                     uploadPhotosToCloudinary(userId, registrationNumber, dateKey)
                 } else {
