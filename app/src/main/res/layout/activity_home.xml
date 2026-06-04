@@ -80,6 +80,46 @@
   </LinearLayout>
 
 
+  <!-- Empty state — shown automatically by ListView when adapter has 0 items -->
+  <LinearLayout
+      android:id="@+id/emptyStateVehicles"
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="vertical"
+      android:gravity="center"
+      android:padding="32dp"
+      android:visibility="gone">
+
+      <ImageView
+          android:layout_width="80dp"
+          android:layout_height="80dp"
+          android:src="@drawable/ic_empty_vehicle"
+          android:alpha="0.25"
+          android:contentDescription="No vehicles" />
+
+      <TextView
+          android:id="@+id/tvEmptyTitle"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="No vehicles yet"
+          android:textSize="20sp"
+          android:textStyle="bold"
+          android:textColor="@color/black"
+          android:layout_marginTop="16dp" />
+
+      <TextView
+          android:id="@+id/tvEmptySubtitle"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="Tap the Vehicles button below to add your first vehicle"
+          android:textSize="14sp"
+          android:textColor="@color/gray"
+          android:gravity="center"
+          android:layout_marginTop="8dp" />
+
+  </LinearLayout>
+
   <!-- List to Display Vehicle Data -->
   <ListView
       android:id="@+id/lvEmails"

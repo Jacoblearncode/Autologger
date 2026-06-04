@@ -26,6 +26,47 @@
             android:gravity="center"/>
     </LinearLayout>
 
+    <!-- Empty state — shown automatically by ListView when adapter has 0 items -->
+    <LinearLayout
+        android:id="@+id/emptyStateServices"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/footer"
+        android:layout_below="@id/header"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_empty_service"
+            android:alpha="0.25"
+            android:contentDescription="No service records" />
+
+        <TextView
+            android:id="@+id/tvEmptyTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No service records"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/black"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/tvEmptySubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tap the Service button below to log the first service for this vehicle"
+            android:textSize="14sp"
+            android:textColor="@color/gray"
+            android:gravity="center"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+
     <!-- List to Display Vehicle Data -->
     <ListView
         android:id="@+id/lvServiceRecords"

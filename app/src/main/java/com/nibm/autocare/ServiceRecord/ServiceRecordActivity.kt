@@ -62,6 +62,7 @@ class ServiceRecordActivity : AppCompatActivity() {
         vehicleRegistration = intent.getStringExtra("vehicleRegistration") ?: ""
         findViewById<TextView>(R.id.tvAppName).text = "Services for $vehicleRegistration"
         lvServiceRecords = findViewById(R.id.lvServiceRecords)
+        lvServiceRecords.setEmptyView(findViewById(R.id.emptyStateServices))
 
         val currentUser = auth.currentUser
         servicesRef = database.reference.child("users_services").child(currentUser?.uid ?: "").child(vehicleRegistration)

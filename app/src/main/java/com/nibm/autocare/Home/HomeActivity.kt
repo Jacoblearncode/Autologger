@@ -51,17 +51,24 @@ class HomeActivity : AppCompatActivity() {
     private var vehiclesListener: ValueEventListener? = null
     private var vehiclesDbRef: DatabaseReference? = null
 
+    private lateinit var tvEmptyTitle: TextView
+    private lateinit var tvEmptySubtitle: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        // Initialize Firebase and views
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance()
         tvGreeting = findViewById(R.id.tvGreeting)
         lvVehicles = findViewById(R.id.lvEmails)
         etSearch = findViewById(R.id.etSearch)
         originalVehicleList = mutableListOf()
+
+        val emptyState = findViewById<View>(R.id.emptyStateVehicles)
+        tvEmptyTitle = emptyState.findViewById(R.id.tvEmptyTitle)
+        tvEmptySubtitle = emptyState.findViewById(R.id.tvEmptySubtitle)
+        lvVehicles.setEmptyView(emptyState)
 
         setupSearch()
         fetchUsername()
@@ -124,6 +131,8 @@ class HomeActivity : AppCompatActivity() {
                         vehicleList.addAll(originalVehicleList)
                         (lvVehicles.adapter as? BaseAdapter)?.notifyDataSetChanged()
                         isSearchActive = false
+                        tvEmptyTitle.text = "No vehicles yet"
+                        tvEmptySubtitle.text = "Tap the Vehicles button below to add your first vehicle"
                     }
                 } else {
                     performSearch()
@@ -146,7 +155,11 @@ class HomeActivity : AppCompatActivity() {
         (lvVehicles.adapter as? BaseAdapter)?.notifyDataSetChanged()
 
         if (filteredList.isEmpty()) {
-            Toast.makeText(this, "No vehicles found", Toast.LENGTH_SHORT).show()
+            tvEmptyTitle.text = "No results found"
+            tvEmptySubtitle.text = "Try a different search term"
+        } else {
+            tvEmptyTitle.text = "No vehicles yet"
+            tvEmptySubtitle.text = "Tap the Vehicles button below to add your first vehicle"
         }
     }
 
