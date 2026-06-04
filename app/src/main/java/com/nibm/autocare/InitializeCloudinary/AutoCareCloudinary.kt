@@ -2,12 +2,14 @@ package com.nibm.autocare
 
 import android.app.Application
 import com.cloudinary.android.MediaManager
+import com.google.firebase.database.FirebaseDatabase
 import java.util.HashMap
 
 class AutoCareCloudinary : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
         initializeCloudinary()
     }
 
