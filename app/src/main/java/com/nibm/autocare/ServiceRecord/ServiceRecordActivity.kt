@@ -37,6 +37,12 @@ class ServiceRecordActivity : AppCompatActivity() {
     private var currentServiceRecords = mutableListOf<ServiceRecord>()
     private var servicesListener: ValueEventListener? = null
 
+    private lateinit var tvSvcTotal: TextView
+    private lateinit var tvFuelTotal: TextView
+    private lateinit var tvCombinedTotal: TextView
+    private lateinit var tvAvgEfficiency: TextView
+    private var totalFuelCost = 0.0
+
     companion object {
         private const val STORAGE_PERMISSION_CODE = 1001
         private val REQUIRED_PERMISSIONS = arrayOf(
@@ -53,6 +59,7 @@ class ServiceRecordActivity : AppCompatActivity() {
         initializeComponents()
         setupClickListeners()
         fetchServiceRecords()
+        fetchFuelSummary()
     }
 
     private fun initializeComponents() {
@@ -63,6 +70,11 @@ class ServiceRecordActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvAppName).text = "Services for $vehicleRegistration"
         lvServiceRecords = findViewById(R.id.lvServiceRecords)
         lvServiceRecords.setEmptyView(findViewById(R.id.emptyStateServices))
+
+        tvSvcTotal = findViewById(R.id.tvSvcTotal)
+        tvFuelTotal = findViewById(R.id.tvFuelTotal)
+        tvCombinedTotal = findViewById(R.id.tvCombinedTotal)
+        tvAvgEfficiency = findViewById(R.id.tvAvgEfficiency)
 
         val currentUser = auth.currentUser
         servicesRef = database.reference.child("users_services").child(currentUser?.uid ?: "").child(vehicleRegistration)
@@ -120,6 +132,7 @@ class ServiceRecordActivity : AppCompatActivity() {
                 }
                 currentServiceRecords.sortByDescending { it.date }
                 lvServiceRecords.adapter = ServiceRecordAdapter(currentServiceRecords, this@ServiceRecordActivity)
+                updateServiceSummary()
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -144,6 +157,69 @@ class ServiceRecordActivity : AppCompatActivity() {
         } catch (e: Exception) {
             null
         }
+    }
+
+    private fun updateServiceSummary() {
+        val svcTotal = currentServiceRecords.sumOf { it.serviceCost.toDoubleOrNull() ?: 0.0 }
+        tvSvcTotal.text = "Rs ${formatAmount(svcTotal)}"
+        updateCombinedTotal(svcTotal)
+    }
+
+    private fun updateCombinedTotal(svcTotal: Double) {
+        val combined = svcTotal + totalFuelCost
+        tvCombinedTotal.text = "Rs ${formatAmount(combined)}"
+    }
+
+    private fun fetchFuelSummary() {
+        val uid = auth.currentUser?.uid ?: return
+        database.reference.child("users_fuel_logs").child(uid)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val logs = mutableListOf<Pair<Double, Double>>() // odometer, liters
+
+                    totalFuelCost = 0.0
+                    for (child in snapshot.children) {
+                        val reg = child.child("registrationNumber").getValue(String::class.java) ?: continue
+                        if (reg != vehicleRegistration) continue
+
+                        val cost = child.child("totalCost").getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
+                        totalFuelCost += cost
+
+                        val odo = child.child("odometer").getValue(String::class.java)?.toDoubleOrNull()
+                        val liters = child.child("liters").getValue(String::class.java)?.toDoubleOrNull()
+                        if (odo != null && liters != null && liters > 0) {
+                            logs.add(odo to liters)
+                        }
+                    }
+
+                    tvFuelTotal.text = "Rs ${formatAmount(totalFuelCost)}"
+
+                    val svcTotal = currentServiceRecords.sumOf { it.serviceCost.toDoubleOrNull() ?: 0.0 }
+                    updateCombinedTotal(svcTotal)
+
+                    if (logs.size >= 2) {
+                        val sorted = logs.sortedBy { it.first }
+                        var totalKm = 0.0
+                        var totalLiters = 0.0
+                        for (i in 1 until sorted.size) {
+                            val kmDiff = sorted[i].first - sorted[i - 1].first
+                            if (kmDiff > 0) {
+                                totalKm += kmDiff
+                                totalLiters += sorted[i].second
+                            }
+                        }
+                        if (totalLiters > 0) {
+                            tvAvgEfficiency.text = String.format("%.1f km/L", totalKm / totalLiters)
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {}
+            })
+    }
+
+    private fun formatAmount(value: Double): String {
+        return if (value == 0.0) "0" else "%,.0f".format(value)
     }
 
     private fun deleteServiceRecord(recordId: String) {
