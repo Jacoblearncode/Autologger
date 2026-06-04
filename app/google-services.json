@@ -2,6 +2,7 @@
   "project_info": {
     "project_number": "341070687885",
     "project_id": "autologger-583c7",
+    "firebase_url": "https://autologger-583c7-default-rtdb.asia-southeast1.firebasedatabase.app",
     "storage_bucket": "autologger-583c7.firebasestorage.app"
   },
   "client": [
