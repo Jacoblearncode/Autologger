@@ -6,6 +6,18 @@
     android:padding="16dp"
     android:background="@color/yellow">
 
+    <!-- Vehicle Photo -->
+    <ImageView
+        android:id="@+id/ivVehiclePhoto"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/circle_gray_bg"
+        android:scaleType="centerCrop"
+        android:clipToOutline="true"
+        android:contentDescription="Vehicle photo" />
+
     <!-- Left Column - Registration Number and Year -->
     <LinearLayout
         android:layout_width="0dp"

@@ -1,16 +1,33 @@
 package com.nibm.autocare.Vehicle
 
+import android.Manifest
+import android.content.ContentValues
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
+import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
+import com.cloudinary.android.MediaManager
+import com.cloudinary.android.callback.ErrorInfo
+import com.cloudinary.android.callback.UploadCallback
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -19,9 +36,12 @@ import com.google.firebase.database.ValueEventListener
 import com.nibm.autocare.AddServiceActivity
 import com.nibm.autocare.HomeActivity
 import com.nibm.autocare.R
+import com.nibm.autocare.Reminder.ReminderScheduler
+import java.io.ByteArrayOutputStream
 
 class AddVehicleActivity : AppCompatActivity() {
 
+    private lateinit var ivVehiclePhoto: ImageView
     private lateinit var etRegistrationNumber: EditText
     private lateinit var spinnerBrand: Spinner
     private lateinit var spinnerModel: Spinner
@@ -42,53 +62,67 @@ class AddVehicleActivity : AppCompatActivity() {
     private var isEditMode = false
     private var vehicleId: String? = null
     private var originalRegistrationNumber: String? = null
+    private var selectedPhotoUri: Uri? = null
+    private var existingPhotoUrl: String? = null
+    private var cameraImageUri: Uri? = null
+
+    companion object {
+        private const val CAMERA_PERMISSION_CODE = 2001
+    }
+
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            result.data?.data?.let { uri ->
+                selectedPhotoUri = uri
+                Glide.with(this).load(uri).circleCrop().into(ivVehiclePhoto)
+            }
+        }
+    }
+
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            cameraImageUri?.let { uri ->
+                selectedPhotoUri = uri
+                Glide.with(this).load(uri).circleCrop().into(ivVehiclePhoto)
+                cameraImageUri = null
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_vehicle)
 
-        // Initialize views
         initViews()
-
-        // Check if we're in edit mode
         checkEditMode()
-
-        // Load brands into the brand spinner
         loadBrands()
 
-        // Set up brand spinner item selection listener
         spinnerBrand.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 selectedBrand = brandList[position]
                 loadModels(selectedBrand)
             }
-
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // Set up model spinner item selection listener
         spinnerModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 selectedModel = modelList[position]
             }
-
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // Set up save/update vehicle button click listener
+        ivVehiclePhoto.setOnClickListener { showPhotoSourceDialog() }
+
         btnSaveVehicle.setOnClickListener {
-            if (isEditMode) {
-                updateVehicle()
-            } else {
-                saveVehicle()
-            }
+            if (isEditMode) updateVehicle() else saveVehicle()
         }
 
-        // Set up footer navigation
         setupFooterNavigation()
     }
 
     private fun initViews() {
+        ivVehiclePhoto = findViewById(R.id.ivVehiclePhoto)
         etRegistrationNumber = findViewById(R.id.etRegistrationNumber)
         spinnerBrand = findViewById(R.id.spinnerBrand)
         spinnerModel = findViewById(R.id.spinnerModel)
@@ -99,47 +133,78 @@ class AddVehicleActivity : AppCompatActivity() {
     }
 
     private fun checkEditMode() {
-        val intent = intent
         isEditMode = intent.hasExtra("vehicleId")
-
         if (isEditMode) {
-            // Change UI for edit mode
             findViewById<TextView>(R.id.tvAppName).text = "Update Vehicle"
             btnSaveVehicle.text = "Update Vehicle"
-
-            // Get vehicle details from intent
             vehicleId = intent.getStringExtra("vehicleId")
             originalRegistrationNumber = intent.getStringExtra("registrationNumber")
-
-            // Load vehicle details
             loadVehicleDetails()
+        }
+    }
+
+    private fun showPhotoSourceDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Select Photo")
+            .setItems(arrayOf("Choose from Gallery", "Take Photo")) { _, which ->
+                if (which == 0) openGallery() else checkCameraPermissionAndOpen()
+            }
+            .show()
+    }
+
+    private fun openGallery() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        galleryLauncher.launch(intent)
+    }
+
+    private fun checkCameraPermissionAndOpen() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_CODE)
+        } else {
+            openCamera()
+        }
+    }
+
+    private fun openCamera() {
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.TITLE, "Vehicle Photo")
+            put(MediaStore.Images.Media.DESCRIPTION, "From Camera")
+        }
+        cameraImageUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+            putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri)
+            cameraLauncher.launch(this)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == CAMERA_PERMISSION_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            openCamera()
         }
     }
 
     private fun loadVehicleDetails() {
         val currentUser = auth.currentUser ?: return
-        val userId = currentUser.uid
-        val vehicleRef = database.reference.child("users_vehicles").child(userId).child(vehicleId!!)
+        val vehicleRef = database.reference.child("users_vehicles").child(currentUser.uid).child(vehicleId!!)
 
         vehicleRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    val registrationNumber = snapshot.child("registrationNumber").getValue(String::class.java)
-                    val brand = snapshot.child("brand").getValue(String::class.java)
-                    val model = snapshot.child("model").getValue(String::class.java)
-                    val manufacturedYear = snapshot.child("manufacturedYear").getValue(String::class.java)
-                    val currentMileage = snapshot.child("currentMileage").getValue(Int::class.java)
-                    val weeklyRidingDistance = snapshot.child("weeklyRidingDistance").getValue(Int::class.java)
+                if (!snapshot.exists()) return
+                etRegistrationNumber.setText(snapshot.child("registrationNumber").getValue(String::class.java))
+                etManufacturedYear.setText(snapshot.child("manufacturedYear").getValue(String::class.java))
+                snapshot.child("currentMileage").getValue(Int::class.java)?.let { etCurrentMileage.setText(it.toString()) }
+                snapshot.child("weeklyRidingDistance").getValue(Int::class.java)?.let { etWeeklyRidingDistance.setText(it.toString()) }
+                selectedBrand = snapshot.child("brand").getValue(String::class.java) ?: ""
+                selectedModel = snapshot.child("model").getValue(String::class.java) ?: ""
 
-                    // Set values to views
-                    etRegistrationNumber.setText(registrationNumber)
-                    etManufacturedYear.setText(manufacturedYear)
-                    currentMileage?.let { etCurrentMileage.setText(it.toString()) }
-                    weeklyRidingDistance?.let { etWeeklyRidingDistance.setText(it.toString()) }
-
-                    // Set brand and model after they are loaded
-                    selectedBrand = brand ?: ""
-                    selectedModel = model ?: ""
+                existingPhotoUrl = snapshot.child("photoUrl").getValue(String::class.java)
+                existingPhotoUrl?.let { url ->
+                    Glide.with(this@AddVehicleActivity)
+                        .load(url)
+                        .circleCrop()
+                        .placeholder(R.drawable.circle_gray_bg)
+                        .into(ivVehiclePhoto)
                 }
             }
 
@@ -166,17 +231,13 @@ class AddVehicleActivity : AppCompatActivity() {
                     val brand = brandSnapshot.key ?: continue
                     brandList.add(brand)
                 }
-
                 val brandAdapter = ArrayAdapter(this@AddVehicleActivity, android.R.layout.simple_spinner_item, brandList)
                 brandAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 spinnerBrand.adapter = brandAdapter
 
-                // After brands are loaded, select the vehicle's brand if in edit mode
                 if (isEditMode && selectedBrand.isNotEmpty()) {
-                    val brandPosition = brandList.indexOf(selectedBrand)
-                    if (brandPosition != -1) {
-                        spinnerBrand.setSelection(brandPosition)
-                    }
+                    val pos = brandList.indexOf(selectedBrand)
+                    if (pos != -1) spinnerBrand.setSelection(pos)
                 }
             }
 
@@ -187,25 +248,20 @@ class AddVehicleActivity : AppCompatActivity() {
     }
 
     private fun loadModels(selectedBrand: String) {
-        val modelsRef = brandsRef.child(selectedBrand).child("models")
-        modelsRef.addListenerForSingleValueEvent(object : ValueEventListener {
+        brandsRef.child(selectedBrand).child("models").addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 modelList.clear()
                 for (modelSnapshot in snapshot.children) {
                     val model = modelSnapshot.getValue(String::class.java) ?: continue
                     modelList.add(model)
                 }
-
                 val modelAdapter = ArrayAdapter(this@AddVehicleActivity, android.R.layout.simple_spinner_item, modelList)
                 modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 spinnerModel.adapter = modelAdapter
 
-                // After models are loaded, select the vehicle's model if in edit mode
                 if (isEditMode && selectedModel.isNotEmpty()) {
-                    val modelPosition = modelList.indexOf(selectedModel)
-                    if (modelPosition != -1) {
-                        spinnerModel.setSelection(modelPosition)
-                    }
+                    val pos = modelList.indexOf(selectedModel)
+                    if (pos != -1) spinnerModel.setSelection(pos)
                 }
             }
 
@@ -221,15 +277,28 @@ class AddVehicleActivity : AppCompatActivity() {
         val currentMileage = etCurrentMileage.text.toString().trim()
         val weeklyRidingDistance = etWeeklyRidingDistance.text.toString().trim()
 
-        if (!validateInputs(registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance)) {
-            return
-        }
+        if (!validateInputs(registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance)) return
 
         val currentUser = auth.currentUser ?: run {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show()
             return
         }
 
+        if (selectedPhotoUri != null) {
+            val progress = showProgressDialog("Uploading photo...")
+            uploadVehiclePhoto(selectedPhotoUri!!) { photoUrl ->
+                progress.dismiss()
+                persistNewVehicle(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, photoUrl)
+            }
+        } else {
+            persistNewVehicle(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, null)
+        }
+    }
+
+    private fun persistNewVehicle(
+        userId: String, registrationNumber: String, manufacturedYear: String,
+        currentMileage: String, weeklyRidingDistance: String, photoUrl: String?
+    ) {
         val vehicle = HashMap<String, Any>()
         vehicle["registrationNumber"] = registrationNumber
         vehicle["brand"] = selectedBrand
@@ -237,21 +306,20 @@ class AddVehicleActivity : AppCompatActivity() {
         vehicle["manufacturedYear"] = manufacturedYear
         vehicle["currentMileage"] = currentMileage.toInt()
         vehicle["weeklyRidingDistance"] = weeklyRidingDistance.toInt()
+        photoUrl?.let { vehicle["photoUrl"] = it }
 
-        val userId = currentUser.uid
         val usersVehiclesRef = database.reference.child("users_vehicles").child(userId)
-        val newVehicleId = usersVehiclesRef.push().key
+        val newVehicleId = usersVehiclesRef.push().key ?: return
 
-        if (newVehicleId != null) {
-            usersVehiclesRef.child(newVehicleId).setValue(vehicle)
-                .addOnSuccessListener {
-                    Toast.makeText(this, "Vehicle saved successfully", Toast.LENGTH_SHORT).show()
-                    navigateToHome()
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, "Failed to save vehicle", Toast.LENGTH_SHORT).show()
-                }
-        }
+        usersVehiclesRef.child(newVehicleId).setValue(vehicle)
+            .addOnSuccessListener {
+                ReminderScheduler.scheduleForVehicle(this, registrationNumber, currentMileage.toInt(), weeklyRidingDistance.toInt())
+                Toast.makeText(this, "Vehicle saved successfully", Toast.LENGTH_SHORT).show()
+                navigateToHome()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Failed to save vehicle", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun updateVehicle() {
@@ -260,28 +328,40 @@ class AddVehicleActivity : AppCompatActivity() {
         val currentMileage = etCurrentMileage.text.toString().trim()
         val weeklyRidingDistance = etWeeklyRidingDistance.text.toString().trim()
 
-        if (!validateInputs(registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance)) {
-            return
-        }
+        if (!validateInputs(registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance)) return
 
         val currentUser = auth.currentUser ?: run {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val vehicleUpdates = HashMap<String, Any>()
-        vehicleUpdates["registrationNumber"] = registrationNumber
-        vehicleUpdates["brand"] = selectedBrand
-        vehicleUpdates["model"] = selectedModel
-        vehicleUpdates["manufacturedYear"] = manufacturedYear
-        vehicleUpdates["currentMileage"] = currentMileage.toInt()
-        vehicleUpdates["weeklyRidingDistance"] = weeklyRidingDistance.toInt()
+        if (selectedPhotoUri != null) {
+            val progress = showProgressDialog("Uploading photo...")
+            uploadVehiclePhoto(selectedPhotoUri!!) { photoUrl ->
+                progress.dismiss()
+                persistVehicleUpdate(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, photoUrl ?: existingPhotoUrl)
+            }
+        } else {
+            persistVehicleUpdate(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, existingPhotoUrl)
+        }
+    }
 
-        val userId = currentUser.uid
+    private fun persistVehicleUpdate(
+        userId: String, registrationNumber: String, manufacturedYear: String,
+        currentMileage: String, weeklyRidingDistance: String, photoUrl: String?
+    ) {
+        val updates = HashMap<String, Any>()
+        updates["registrationNumber"] = registrationNumber
+        updates["brand"] = selectedBrand
+        updates["model"] = selectedModel
+        updates["manufacturedYear"] = manufacturedYear
+        updates["currentMileage"] = currentMileage.toInt()
+        updates["weeklyRidingDistance"] = weeklyRidingDistance.toInt()
+        photoUrl?.let { updates["photoUrl"] = it }
+
         database.reference.child("users_vehicles").child(userId).child(vehicleId!!)
-            .updateChildren(vehicleUpdates)
+            .updateChildren(updates)
             .addOnSuccessListener {
-                // Also update the registration number in services if it was changed
                 if (originalRegistrationNumber != null && originalRegistrationNumber != registrationNumber) {
                     updateServicesRegistrationNumber(userId, originalRegistrationNumber!!, registrationNumber)
                 } else {
@@ -294,64 +374,115 @@ class AddVehicleActivity : AppCompatActivity() {
             }
     }
 
+    private fun uploadVehiclePhoto(uri: Uri, onComplete: (String?) -> Unit) {
+        val imageBytes = compressImage(uri) ?: run {
+            onComplete(null)
+            return
+        }
+        val publicId = "vehicle_${auth.currentUser?.uid}_${System.currentTimeMillis()}"
+        MediaManager.get().upload(imageBytes)
+            .option("folder", "Home/AutoCare/vehicles")
+            .option("public_id", publicId)
+            .callback(object : UploadCallback {
+                override fun onStart(requestId: String) {}
+                override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {}
+                override fun onSuccess(requestId: String, resultData: Map<*, *>) {
+                    onComplete(resultData["url"]?.toString())
+                }
+                override fun onError(requestId: String, error: ErrorInfo) {
+                    Log.e("Cloudinary", "Vehicle photo upload failed: ${error.description}")
+                    runOnUiThread { Toast.makeText(this@AddVehicleActivity, "Photo upload failed, saving without photo", Toast.LENGTH_SHORT).show() }
+                    onComplete(null)
+                }
+                override fun onReschedule(requestId: String, error: ErrorInfo) {}
+            })
+            .dispatch()
+    }
+
+    private fun showProgressDialog(message: String): AlertDialog {
+        return AlertDialog.Builder(this)
+            .setMessage(message)
+            .setCancelable(false)
+            .create()
+            .also { it.show() }
+    }
+
+    private fun compressImage(uri: Uri): ByteArray? {
+        return try {
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
+            options.inSampleSize = calculateInSampleSize(options, 1024, 1024)
+            options.inJustDecodeBounds = false
+            val bitmap = contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            } ?: return null
+            ByteArrayOutputStream().use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
+                out.toByteArray()
+            }
+        } catch (e: Exception) {
+            Log.e("Compress", "Failed to compress image: ${e.message}")
+            null
+        }
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height, width) = options.outHeight to options.outWidth
+        var inSampleSize = 1
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight = height / 2
+            val halfWidth = width / 2
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
     private fun updateServicesRegistrationNumber(userId: String, oldRegNumber: String, newRegNumber: String) {
         val servicesRef = database.reference.child("users_services").child(userId)
-
-        // First get all services under old registration number
         servicesRef.child(oldRegNumber).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
-                    // Move services to new registration number
                     servicesRef.child(newRegNumber).setValue(snapshot.value)
                         .addOnSuccessListener {
-                            // Remove old services
                             servicesRef.child(oldRegNumber).removeValue()
                                 .addOnSuccessListener {
-                                    Toast.makeText(this@AddVehicleActivity,
-                                        "Vehicle and services updated successfully",
-                                        Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@AddVehicleActivity, "Vehicle and services updated successfully", Toast.LENGTH_SHORT).show()
                                     navigateToHome()
                                 }
                         }
                 } else {
-                    Toast.makeText(this@AddVehicleActivity,
-                        "Vehicle updated successfully",
-                        Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@AddVehicleActivity, "Vehicle updated successfully", Toast.LENGTH_SHORT).show()
                     navigateToHome()
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@AddVehicleActivity,
-                    "Vehicle updated but services may not be updated",
-                    Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@AddVehicleActivity, "Vehicle updated but services may not be updated", Toast.LENGTH_SHORT).show()
                 navigateToHome()
             }
         })
     }
 
     private fun validateInputs(
-        registrationNumber: String,
-        manufacturedYear: String,
-        currentMileage: String,
-        weeklyRidingDistance: String
+        registrationNumber: String, manufacturedYear: String,
+        currentMileage: String, weeklyRidingDistance: String
     ): Boolean {
         if (registrationNumber.isEmpty() || selectedBrand.isEmpty() || selectedModel.isEmpty() ||
-            manufacturedYear.isEmpty() || currentMileage.isEmpty() || weeklyRidingDistance.isEmpty()) {
+            manufacturedYear.isEmpty() || currentMileage.isEmpty() || weeklyRidingDistance.isEmpty()
+        ) {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
             return false
         }
-
         if (currentMileage.toIntOrNull() == null) {
             Toast.makeText(this, "Please enter valid current mileage", Toast.LENGTH_SHORT).show()
             return false
         }
-
         if (weeklyRidingDistance.toIntOrNull() == null) {
             Toast.makeText(this, "Please enter valid weekly riding distance", Toast.LENGTH_SHORT).show()
             return false
         }
-
         return true
     }
 
