@@ -18,6 +18,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.nibm.autocare.AddServiceActivity
+import com.nibm.autocare.FuelLogActivity
 import com.nibm.autocare.HomeActivity
 import com.nibm.autocare.R
 
@@ -156,6 +157,9 @@ class AddVehicleActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.llAddService).setOnClickListener {
             startActivity(Intent(this, AddServiceActivity::class.java))
+        }
+        findViewById<View>(R.id.llFuelLog).setOnClickListener {
+            startActivity(Intent(this, FuelLogActivity::class.java))
         }
     }
 

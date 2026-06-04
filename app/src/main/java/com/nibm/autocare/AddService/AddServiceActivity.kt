@@ -184,9 +184,11 @@ class AddServiceActivity : AppCompatActivity() {
         findViewById<View>(R.id.llHome).setOnClickListener {
             startActivity(Intent(this, HomeActivity::class.java))
         }
-
         findViewById<View>(R.id.llAddVehicle).setOnClickListener {
             startActivity(Intent(this, AddVehicleActivity::class.java))
+        }
+        findViewById<View>(R.id.llFuelLog).setOnClickListener {
+            startActivity(Intent(this, FuelLogActivity::class.java))
         }
     }
 

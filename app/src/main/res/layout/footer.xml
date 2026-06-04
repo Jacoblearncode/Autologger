@@ -77,4 +77,28 @@
             android:textSize="12sp"
             android:layout_marginTop="4dp" />
     </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/llFuelLog"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="4dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_fuel_log"
+            android:contentDescription="Fuel log icon" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fuel"
+            android:textColor="@color/yellow"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
 </LinearLayout>

@@ -81,6 +81,9 @@ class HomeActivity : AppCompatActivity() {
         findViewById<View>(R.id.llAddService).setOnClickListener {
             startActivity(Intent(this, AddServiceActivity::class.java))
         }
+        findViewById<View>(R.id.llFuelLog).setOnClickListener {
+            startActivity(Intent(this, FuelLogActivity::class.java))
+        }
     }
 
     override fun onStart() {
