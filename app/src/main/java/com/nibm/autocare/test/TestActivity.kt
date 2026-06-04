@@ -16,7 +16,6 @@ import com.bumptech.glide.Glide
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.ErrorInfo
 import com.cloudinary.android.callback.UploadCallback
-
 class TestActivity : AppCompatActivity() {
 
     private lateinit var imageView: ImageView
@@ -36,7 +35,6 @@ class TestActivity : AppCompatActivity() {
         uploadButton = findViewById(R.id.uploadButton)
         urlTextView = findViewById(R.id.urlTextView)
         uploadProgressBar = findViewById(R.id.uploadProgressBar)
-
 
         // Button to select an image from the gallery
         selectImageButton.setOnClickListener {

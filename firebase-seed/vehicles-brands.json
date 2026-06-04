@@ -1,0 +1,51 @@
+{
+  "vehicles": {
+    "brands": {
+      "Honda": {
+        "models": ["City", "Civic", "Accord", "HR-V", "CR-V", "BR-V", "Jazz", "Brio"]
+      },
+      "Toyota": {
+        "models": ["Vios", "Yaris", "Camry", "Corolla", "Hilux", "Fortuner", "Avanza", "Rush", "Veloz", "Innova"]
+      },
+      "Perodua": {
+        "models": ["Myvi", "Axia", "Bezza", "Alza", "Ativa", "Aruz", "Kenari", "Kancil", "Viva"]
+      },
+      "Proton": {
+        "models": ["Saga", "Persona", "Iriz", "Exora", "X50", "X70", "S70", "Preve", "Suprima S"]
+      },
+      "Nissan": {
+        "models": ["Almera", "X-Trail", "Navara", "Serena", "March", "Note", "Livina", "Grand Livina"]
+      },
+      "Mazda": {
+        "models": ["Mazda 2", "Mazda 3", "Mazda 6", "CX-3", "CX-5", "CX-8", "CX-30", "BT-50"]
+      },
+      "Mitsubishi": {
+        "models": ["Attrage", "Xpander", "ASX", "Outlander", "Pajero Sport", "Triton", "Eclipse Cross"]
+      },
+      "Hyundai": {
+        "models": ["Sonata", "Elantra", "Tucson", "Santa Fe", "Kona", "Creta", "i10", "i20", "i30"]
+      },
+      "Kia": {
+        "models": ["Picanto", "Rio", "Cerato", "Optima", "Sportage", "Sorento", "Carnival", "EV6"]
+      },
+      "Volkswagen": {
+        "models": ["Polo", "Golf", "Jetta", "Passat", "Tiguan", "Touareg", "Beetle", "Arteon"]
+      },
+      "BMW": {
+        "models": ["118i", "120i", "316i", "318i", "320i", "520i", "523i", "530i", "X1", "X3", "X5"]
+      },
+      "Mercedes-Benz": {
+        "models": ["A180", "A200", "C200", "C300", "E200", "E300", "GLA200", "GLC200", "GLC300", "S450"]
+      },
+      "Audi": {
+        "models": ["A1", "A3", "A4", "A5", "A6", "Q2", "Q3", "Q5", "Q7", "TT"]
+      },
+      "Ford": {
+        "models": ["Fiesta", "Focus", "Escape", "Mustang", "Ranger", "Everest", "Territory"]
+      },
+      "Suzuki": {
+        "models": ["Swift", "Vitara", "Ertiga", "Jimny", "Baleno", "Ignis", "S-Cross"]
+      }
+    }
+  }
+}
