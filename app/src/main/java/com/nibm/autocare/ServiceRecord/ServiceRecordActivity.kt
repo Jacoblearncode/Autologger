@@ -274,7 +274,7 @@ class ServiceRecordActivity : AppCompatActivity() {
 
             if (convertView == null) {
                 view = LayoutInflater.from(parent?.context)
-                    .inflate(R.layout.list_item_service_record, parent, false)
+                    .inflate(R.layout.list_item_service_timeline, parent, false)
                 viewHolder = ViewHolder(view)
                 view.tag = viewHolder
             } else {
@@ -289,6 +289,7 @@ class ServiceRecordActivity : AppCompatActivity() {
             setupImages(viewHolder, service)
             setupDeleteButton(viewHolder, service)
             setupExpandCollapse(view, viewHolder, position)
+            setupTimelineLines(viewHolder, position)
 
             return view
         }
@@ -297,14 +298,13 @@ class ServiceRecordActivity : AppCompatActivity() {
             viewHolder.tvOdometerReading.text = "${service.odometerReading} km"
             viewHolder.tvServiceDate.text = service.date
             viewHolder.tvServiceCost.text = "Rs ${service.serviceCost}"
+            service.serviceType?.let {
+                viewHolder.tvServiceType.text = it
+                viewHolder.tvServiceType.visibility = View.VISIBLE
+            } ?: run { viewHolder.tvServiceType.visibility = View.GONE }
         }
 
         private fun setupExpandedDetails(viewHolder: ViewHolder, service: ServiceRecord) {
-            service.serviceType?.let {
-                viewHolder.tvServiceType.text = "Service: $it"
-                viewHolder.tvServiceType.visibility = View.VISIBLE
-            } ?: run { viewHolder.tvServiceType.visibility = View.GONE }
-
             service.checkedItems?.let {
                 viewHolder.tvCheckedItems.text = "Services:\n${it.joinToString("\n• ", "• ")}"
                 viewHolder.tvCheckedItems.visibility = View.VISIBLE
@@ -343,6 +343,13 @@ class ServiceRecordActivity : AppCompatActivity() {
             viewHolder.btnDelete.setOnClickListener {
                 showDeleteConfirmation(service.recordId)
             }
+        }
+
+        private fun setupTimelineLines(viewHolder: ViewHolder, position: Int) {
+            viewHolder.viewLineTop.visibility =
+                if (position == 0) View.INVISIBLE else View.VISIBLE
+            viewHolder.viewLineBottom.visibility =
+                if (position == count - 1) View.INVISIBLE else View.VISIBLE
         }
 
         private fun setupExpandCollapse(view: View, viewHolder: ViewHolder, position: Int) {
@@ -386,6 +393,9 @@ class ServiceRecordActivity : AppCompatActivity() {
             val llExpandedDetails: LinearLayout = view.findViewById(R.id.llExpandedDetails)
             val imageContainer: LinearLayout = view.findViewById(R.id.imageContainer)
             val btnDelete: ImageButton = view.findViewById(R.id.btnDelete)
+            val viewLineTop: View = view.findViewById(R.id.viewLineTop)
+            val viewDot: View = view.findViewById(R.id.viewDot)
+            val viewLineBottom: View = view.findViewById(R.id.viewLineBottom)
         }
 
         private fun Int.dpToPx(): Int = (this * context.resources.displayMetrics.density).toInt()
