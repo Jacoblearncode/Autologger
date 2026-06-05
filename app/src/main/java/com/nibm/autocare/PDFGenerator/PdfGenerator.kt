@@ -161,4 +161,61 @@ class PdfGenerator(private val context: Context) {
             }
         }
     }
+
+    suspend fun generateFuelLogPdf(
+        vehicleFilter: String,
+        fuelLogs: List<FuelLogActivity.FuelLog>
+    ): Pair<String?, Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val safeName = vehicleFilter.replace(" ", "_")
+            val fileName = "FuelLog_${safeName}_$timeStamp.pdf"
+
+            val downloadsDir = if (Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED) {
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            } else {
+                context.filesDir
+            }
+
+            val file = File(downloadsDir, fileName)
+            val pdfWriter = PdfWriter(FileOutputStream(file))
+            val pdfDocument = PdfDocument(pdfWriter)
+            val document = Document(pdfDocument)
+
+            document.add(
+                Paragraph("Fuel Log — $vehicleFilter")
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setBold()
+                    .setFontSize(18f)
+            )
+            document.add(Paragraph("\n"))
+
+            var totalCost = 0.0
+            var totalLiters = 0.0
+
+            fuelLogs.forEach { log ->
+                document.add(Paragraph("Date: ${log.date}  |  ${log.registrationNumber}").setBold().setFontSize(13f))
+                document.add(Paragraph("Odometer: ${log.odometer} km  |  Fuel: ${log.liters} L  |  Type: ${log.fuelType}").setFontSize(11f))
+                document.add(Paragraph("Price: Rs ${log.pricePerLiter}/L  |  Total: Rs ${log.totalCost}").setFontSize(11f))
+                if (log.efficiency.isNotBlank()) document.add(Paragraph("Efficiency: ${log.efficiency}").setFontSize(11f))
+                if (log.notes.isNotBlank()) document.add(Paragraph("Notes: ${log.notes}").setFontSize(11f).setItalic())
+                document.add(Paragraph("─────────────────────────────────────────").setFontSize(9f).setFontColor(ColorConstants.GRAY))
+
+                totalCost += log.totalCost.toDoubleOrNull() ?: 0.0
+                totalLiters += log.liters.toDoubleOrNull() ?: 0.0
+            }
+
+            document.add(Paragraph("\n"))
+            document.add(
+                Paragraph("Total: ${fuelLogs.size} fill-ups  |  ${String.format("%.1f", totalLiters)} L  |  Rs ${String.format("%,.0f", totalCost)}")
+                    .setBold().setFontSize(13f).setTextAlignment(TextAlignment.CENTER)
+            )
+
+            document.close()
+            Pair(file.absolutePath, true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair(null, false)
+        }
+    }
 }

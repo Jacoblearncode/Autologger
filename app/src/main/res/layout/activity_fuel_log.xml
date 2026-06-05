@@ -23,6 +23,15 @@
             android:textStyle="bold" />
 
         <ImageView
+            android:id="@+id/btnDownloadFuelPdf"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="Export fuel log PDF"
+            android:padding="8dp"
+            android:src="@drawable/ic_pdf_download"
+            android:tint="@color/yellow" />
+
+        <ImageView
             android:id="@+id/btnAddFuelLog"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

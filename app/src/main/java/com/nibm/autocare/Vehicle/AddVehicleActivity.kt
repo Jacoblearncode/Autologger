@@ -46,10 +46,17 @@ class AddVehicleActivity : AppCompatActivity() {
     private lateinit var etRegistrationNumber: EditText
     private lateinit var spinnerBrand: Spinner
     private lateinit var spinnerModel: Spinner
+    private lateinit var etCustomBrand: EditText
+    private lateinit var etCustomModel: EditText
     private lateinit var etManufacturedYear: EditText
     private lateinit var etCurrentMileage: EditText
     private lateinit var etWeeklyRidingDistance: EditText
     private lateinit var btnSaveVehicle: Button
+
+    companion object {
+        private const val CAMERA_PERMISSION_CODE = 2001
+        private const val OTHER_OPTION = "Other (Enter manually)"
+    }
 
     private val database = FirebaseDatabase.getInstance()
     private val brandsRef = database.reference.child("vehicles").child("brands")
@@ -67,9 +74,6 @@ class AddVehicleActivity : AppCompatActivity() {
     private var existingPhotoUrl: String? = null
     private var cameraImageUri: Uri? = null
 
-    companion object {
-        private const val CAMERA_PERMISSION_CODE = 2001
-    }
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -100,15 +104,35 @@ class AddVehicleActivity : AppCompatActivity() {
 
         spinnerBrand.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedBrand = brandList[position]
-                loadModels(selectedBrand)
+                val picked = brandList[position]
+                if (picked == OTHER_OPTION) {
+                    etCustomBrand.visibility = View.VISIBLE
+                    selectedBrand = etCustomBrand.text.toString().trim()
+                    modelList.clear()
+                    modelList.add(OTHER_OPTION)
+                    spinnerModel.adapter = ArrayAdapter(this@AddVehicleActivity, android.R.layout.simple_spinner_item, modelList).also {
+                        it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    }
+                    etCustomModel.visibility = View.VISIBLE
+                } else {
+                    etCustomBrand.visibility = View.GONE
+                    selectedBrand = picked
+                    loadModels(selectedBrand)
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
         spinnerModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedModel = modelList[position]
+                val picked = modelList[position]
+                if (picked == OTHER_OPTION) {
+                    etCustomModel.visibility = View.VISIBLE
+                    selectedModel = etCustomModel.text.toString().trim()
+                } else {
+                    etCustomModel.visibility = View.GONE
+                    selectedModel = picked
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
@@ -127,6 +151,8 @@ class AddVehicleActivity : AppCompatActivity() {
         etRegistrationNumber = findViewById(R.id.etRegistrationNumber)
         spinnerBrand = findViewById(R.id.spinnerBrand)
         spinnerModel = findViewById(R.id.spinnerModel)
+        etCustomBrand = findViewById(R.id.etCustomBrand)
+        etCustomModel = findViewById(R.id.etCustomModel)
         etManufacturedYear = findViewById(R.id.etManufacturedYear)
         etCurrentMileage = findViewById(R.id.etCurrentMileage)
         etWeeklyRidingDistance = findViewById(R.id.etWeeklyRidingDistance)
@@ -235,13 +261,20 @@ class AddVehicleActivity : AppCompatActivity() {
                     val brand = brandSnapshot.key ?: continue
                     brandList.add(brand)
                 }
+                brandList.add(OTHER_OPTION)
                 val brandAdapter = ArrayAdapter(this@AddVehicleActivity, android.R.layout.simple_spinner_item, brandList)
                 brandAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 spinnerBrand.adapter = brandAdapter
 
                 if (isEditMode && selectedBrand.isNotEmpty()) {
                     val pos = brandList.indexOf(selectedBrand)
-                    if (pos != -1) spinnerBrand.setSelection(pos)
+                    if (pos != -1) {
+                        spinnerBrand.setSelection(pos)
+                    } else {
+                        spinnerBrand.setSelection(brandList.indexOf(OTHER_OPTION).coerceAtLeast(0))
+                        etCustomBrand.setText(selectedBrand)
+                        etCustomBrand.visibility = View.VISIBLE
+                    }
                 }
             }
 
@@ -259,6 +292,7 @@ class AddVehicleActivity : AppCompatActivity() {
                     val model = modelSnapshot.getValue(String::class.java) ?: continue
                     modelList.add(model)
                 }
+                modelList.add(OTHER_OPTION)
                 val modelAdapter = ArrayAdapter(this@AddVehicleActivity, android.R.layout.simple_spinner_item, modelList)
                 modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 spinnerModel.adapter = modelAdapter
@@ -275,7 +309,17 @@ class AddVehicleActivity : AppCompatActivity() {
         })
     }
 
+    private fun resolveCustomInputs() {
+        if (spinnerBrand.selectedItem?.toString() == OTHER_OPTION) {
+            selectedBrand = etCustomBrand.text.toString().trim()
+        }
+        if (spinnerModel.selectedItem?.toString() == OTHER_OPTION) {
+            selectedModel = etCustomModel.text.toString().trim()
+        }
+    }
+
     private fun saveVehicle() {
+        resolveCustomInputs()
         val registrationNumber = etRegistrationNumber.text.toString().trim()
         val manufacturedYear = etManufacturedYear.text.toString().trim()
         val currentMileage = etCurrentMileage.text.toString().trim()
@@ -327,6 +371,7 @@ class AddVehicleActivity : AppCompatActivity() {
     }
 
     private fun updateVehicle() {
+        resolveCustomInputs()
         val registrationNumber = etRegistrationNumber.text.toString().trim()
         val manufacturedYear = etManufacturedYear.text.toString().trim()
         val currentMileage = etCurrentMileage.text.toString().trim()

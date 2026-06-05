@@ -41,7 +41,13 @@ class ServiceRecordActivity : AppCompatActivity() {
     private lateinit var tvFuelTotal: TextView
     private lateinit var tvCombinedTotal: TextView
     private lateinit var tvAvgEfficiency: TextView
+    private lateinit var tvCostPerKm: TextView
+    private lateinit var tvNextService: TextView
+    private lateinit var tvRecordCount: TextView
     private var totalFuelCost = 0.0
+    private var lastServiceOdometer = 0.0
+    private var maxFuelOdometer = 0.0
+    private var minAllOdometer = Double.MAX_VALUE
 
     companion object {
         private const val STORAGE_PERMISSION_CODE = 1001
@@ -75,6 +81,9 @@ class ServiceRecordActivity : AppCompatActivity() {
         tvFuelTotal = findViewById(R.id.tvFuelTotal)
         tvCombinedTotal = findViewById(R.id.tvCombinedTotal)
         tvAvgEfficiency = findViewById(R.id.tvAvgEfficiency)
+        tvCostPerKm = findViewById(R.id.tvCostPerKm)
+        tvNextService = findViewById(R.id.tvNextService)
+        tvRecordCount = findViewById(R.id.tvRecordCount)
 
         val currentUser = auth.currentUser
         servicesRef = database.reference.child("users_services").child(currentUser?.uid ?: "").child(vehicleRegistration)
@@ -94,6 +103,12 @@ class ServiceRecordActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.llFuelLog).setOnClickListener {
             startActivity(Intent(this, FuelLogActivity::class.java))
+        }
+
+        findViewById<View>(R.id.btnDocuments).setOnClickListener {
+            val intent = Intent(this, VehicleDocumentsActivity::class.java)
+            intent.putExtra("vehicleRegistration", vehicleRegistration)
+            startActivity(intent)
         }
 
         findViewById<View>(R.id.btnDownloadPdf).setOnClickListener {
@@ -162,12 +177,55 @@ class ServiceRecordActivity : AppCompatActivity() {
     private fun updateServiceSummary() {
         val svcTotal = currentServiceRecords.sumOf { it.serviceCost.toDoubleOrNull() ?: 0.0 }
         tvSvcTotal.text = "Rs ${formatAmount(svcTotal)}"
+        tvRecordCount.text = "${currentServiceRecords.size}"
+
+        val odoValues = currentServiceRecords.mapNotNull { it.odometerReading.toDoubleOrNull() }
+        if (odoValues.isNotEmpty()) {
+            lastServiceOdometer = odoValues.max()
+            minAllOdometer = minOf(minAllOdometer, odoValues.min())
+        }
         updateCombinedTotal(svcTotal)
+        updateNextService()
+        updateCostPerKm(svcTotal)
     }
 
     private fun updateCombinedTotal(svcTotal: Double) {
         val combined = svcTotal + totalFuelCost
         tvCombinedTotal.text = "Rs ${formatAmount(combined)}"
+    }
+
+    private fun updateNextService() {
+        if (lastServiceOdometer == 0.0) {
+            tvNextService.text = "—"
+            return
+        }
+        val nextDue = lastServiceOdometer + 5000
+        val currentEst = maxOf(maxFuelOdometer, lastServiceOdometer)
+        val remaining = nextDue - currentEst
+        when {
+            remaining <= 0 -> {
+                tvNextService.text = "OVERDUE"
+                tvNextService.setTextColor(ContextCompat.getColor(this, R.color.red))
+            }
+            remaining <= 1000 -> {
+                tvNextService.text = "%.0f km".format(remaining)
+                tvNextService.setTextColor(ContextCompat.getColor(this, R.color.yellow))
+            }
+            else -> {
+                tvNextService.text = "%.0f km".format(remaining)
+                tvNextService.setTextColor(ContextCompat.getColor(this, R.color.white))
+            }
+        }
+    }
+
+    private fun updateCostPerKm(svcTotal: Double) {
+        val currentEst = maxOf(maxFuelOdometer, lastServiceOdometer)
+        val kmRange = currentEst - minAllOdometer
+        if (kmRange > 0) {
+            tvCostPerKm.text = "Rs %.2f/km".format((svcTotal + totalFuelCost) / kmRange)
+        } else {
+            tvCostPerKm.text = "— /km"
+        }
     }
 
     private fun fetchFuelSummary() {
@@ -178,6 +236,7 @@ class ServiceRecordActivity : AppCompatActivity() {
                     val logs = mutableListOf<Pair<Double, Double>>() // odometer, liters
 
                     totalFuelCost = 0.0
+                    maxFuelOdometer = 0.0
                     for (child in snapshot.children) {
                         val reg = child.child("registrationNumber").getValue(String::class.java) ?: continue
                         if (reg != vehicleRegistration) continue
@@ -187,8 +246,10 @@ class ServiceRecordActivity : AppCompatActivity() {
 
                         val odo = child.child("odometer").getValue(String::class.java)?.toDoubleOrNull()
                         val liters = child.child("liters").getValue(String::class.java)?.toDoubleOrNull()
-                        if (odo != null && liters != null && liters > 0) {
-                            logs.add(odo to liters)
+                        if (odo != null) {
+                            maxFuelOdometer = maxOf(maxFuelOdometer, odo)
+                            minAllOdometer = minOf(minAllOdometer, odo)
+                            if (liters != null && liters > 0) logs.add(odo to liters)
                         }
                     }
 
@@ -196,6 +257,8 @@ class ServiceRecordActivity : AppCompatActivity() {
 
                     val svcTotal = currentServiceRecords.sumOf { it.serviceCost.toDoubleOrNull() ?: 0.0 }
                     updateCombinedTotal(svcTotal)
+                    updateNextService()
+                    updateCostPerKm(svcTotal)
 
                     if (logs.size >= 2) {
                         val sorted = logs.sortedBy { it.first }

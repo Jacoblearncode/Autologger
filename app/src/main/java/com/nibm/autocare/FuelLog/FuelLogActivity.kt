@@ -8,6 +8,8 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -15,6 +17,8 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.nibm.autocare.Vehicle.AddVehicleActivity
+import kotlinx.coroutines.launch
+import java.io.File
 
 class FuelLogActivity : AppCompatActivity() {
 
@@ -30,6 +34,7 @@ class FuelLogActivity : AppCompatActivity() {
     private val displayedLogs = mutableListOf<FuelLog>()
     private var logsListener: ValueEventListener? = null
     private var selectedVehicle = ALL_VEHICLES
+    private lateinit var pdfGenerator: PdfGenerator
 
     companion object {
         const val EXTRA_VEHICLE = "vehicleRegistration"
@@ -57,11 +62,21 @@ class FuelLogActivity : AppCompatActivity() {
             .child("users_fuel_logs")
             .child(auth.currentUser?.uid ?: "")
 
+        pdfGenerator = PdfGenerator(this)
+
         setupNavigation()
         setupFilterSpinner()
 
         findViewById<View>(R.id.btnAddFuelLog).setOnClickListener {
             startActivity(Intent(this, AddFuelLogActivity::class.java))
+        }
+
+        findViewById<View>(R.id.btnDownloadFuelPdf).setOnClickListener {
+            if (displayedLogs.isEmpty()) {
+                Toast.makeText(this, "No fuel logs to export", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            generateFuelPdf()
         }
     }
 
@@ -193,6 +208,32 @@ class FuelLogActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun generateFuelPdf() {
+        val progress = AlertDialog.Builder(this)
+            .setMessage("Generating PDF...")
+            .setCancelable(false)
+            .create()
+            .also { it.show() }
+
+        lifecycleScope.launch {
+            val label = if (selectedVehicle == "All Vehicles") "All Vehicles" else selectedVehicle
+            val (filePath, success) = pdfGenerator.generateFuelLogPdf(label, displayedLogs)
+            progress.dismiss()
+            if (success && filePath != null) {
+                val file = File(filePath)
+                val uri = FileProvider.getUriForFile(this@FuelLogActivity, "${packageName}.provider", file)
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/pdf"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+                startActivity(Intent.createChooser(shareIntent, "Share Fuel Log"))
+            } else {
+                Toast.makeText(this@FuelLogActivity, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun setupNavigation() {

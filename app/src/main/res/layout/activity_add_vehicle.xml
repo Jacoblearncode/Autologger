@@ -112,6 +112,17 @@
                     android:padding="12dp" />
             </LinearLayout>
 
+            <EditText
+                android:id="@+id/etCustomBrand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter brand name"
+                android:inputType="textCapWords"
+                android:padding="12dp"
+                android:background="@drawable/edit_text_background"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
+
             <!-- Vehicle Model Dropdown -->
             <TextView
                 android:layout_width="match_parent"
@@ -132,6 +143,17 @@
                     android:layout_height="wrap_content"
                     android:padding="12dp" />
             </LinearLayout>
+
+            <EditText
+                android:id="@+id/etCustomModel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter model name"
+                android:inputType="textCapWords"
+                android:padding="12dp"
+                android:background="@drawable/edit_text_background"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
 
             <!-- Manufactured Year -->
             <TextView
