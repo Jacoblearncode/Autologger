@@ -128,12 +128,16 @@ class ServiceRecordActivity : AppCompatActivity() {
                 showToast("No service records to export")
                 return@setOnClickListener
             }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || hasStoragePermissions()) {
-                generateAndDownloadPdf()
-            } else {
-                requestStoragePermissions()
-            }
+            AlertDialog.Builder(this)
+                .setTitle("Export Service Records")
+                .setItems(arrayOf("Export as PDF", "Export as CSV")) { _, which ->
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || hasStoragePermissions()) {
+                        if (which == 0) generateAndDownloadPdf() else generateAndDownloadCsv()
+                    } else {
+                        requestStoragePermissions()
+                    }
+                }
+                .show()
         }
     }
 
@@ -318,6 +322,24 @@ class ServiceRecordActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun generateAndDownloadCsv() {
+        val progressDialog = AlertDialog.Builder(this)
+            .setMessage("Generating CSV...")
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+
+        lifecycleScope.launch {
+            val (filePath, success) = pdfGenerator.generateServiceRecordCsv(vehicleRegistration, currentServiceRecords)
+            progressDialog.dismiss()
+            if (success && filePath != null) {
+                shareFile(filePath, "text/csv")
+            } else {
+                Toast.makeText(this@ServiceRecordActivity, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun generateAndDownloadPdf() {
         val progressDialog = AlertDialog.Builder(this)
             .setMessage("Generating PDF...")
@@ -329,34 +351,22 @@ class ServiceRecordActivity : AppCompatActivity() {
             val (filePath, success) = pdfGenerator.generateServiceRecordPdf(vehicleRegistration, currentServiceRecords)
             progressDialog.dismiss()
             if (success && filePath != null) {
-                sharePdfFile(filePath)
+                shareFile(filePath, "application/pdf")
             } else {
                 Toast.makeText(this@ServiceRecordActivity, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun sharePdfFile(filePath: String) {
+    private fun shareFile(filePath: String, mimeType: String) {
         val file = File(filePath)
-        val uri = FileProvider.getUriForFile(
-            this,
-            "${packageName}.provider",
-            file
-        )
-
+        val uri = FileProvider.getUriForFile(this, "${packageName}.provider", file)
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/pdf"
+            type = mimeType
             putExtra(Intent.EXTRA_STREAM, uri)
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
         }
-
-        startActivity(Intent.createChooser(shareIntent, "Share Service Records"))
-
-        Toast.makeText(
-            this,
-            "PDF saved to ${file.parentFile?.name ?: "app storage"} folder",
-            Toast.LENGTH_LONG
-        ).show()
+        startActivity(Intent.createChooser(shareIntent, "Share ${file.name}"))
     }
 
     private fun hasStoragePermissions(): Boolean {

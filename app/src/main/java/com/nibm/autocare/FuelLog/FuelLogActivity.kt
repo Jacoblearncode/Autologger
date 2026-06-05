@@ -76,7 +76,12 @@ class FuelLogActivity : AppCompatActivity() {
                 Toast.makeText(this, "No fuel logs to export", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            generateFuelPdf()
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Export Fuel Log")
+                .setItems(arrayOf("Export as PDF", "Export as CSV")) { _, which ->
+                    if (which == 0) generateFuelPdf() else generateFuelCsv()
+                }
+                .show()
         }
     }
 
@@ -218,22 +223,45 @@ class FuelLogActivity : AppCompatActivity() {
             .also { it.show() }
 
         lifecycleScope.launch {
-            val label = if (selectedVehicle == "All Vehicles") "All Vehicles" else selectedVehicle
+            val label = if (selectedVehicle == ALL_VEHICLES) ALL_VEHICLES else selectedVehicle
             val (filePath, success) = pdfGenerator.generateFuelLogPdf(label, displayedLogs)
             progress.dismiss()
             if (success && filePath != null) {
-                val file = File(filePath)
-                val uri = FileProvider.getUriForFile(this@FuelLogActivity, "${packageName}.provider", file)
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                }
-                startActivity(Intent.createChooser(shareIntent, "Share Fuel Log"))
+                shareFile(filePath, "application/pdf")
             } else {
                 Toast.makeText(this@FuelLogActivity, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun generateFuelCsv() {
+        val progress = AlertDialog.Builder(this)
+            .setMessage("Generating CSV...")
+            .setCancelable(false)
+            .create()
+            .also { it.show() }
+
+        lifecycleScope.launch {
+            val label = if (selectedVehicle == ALL_VEHICLES) ALL_VEHICLES else selectedVehicle
+            val (filePath, success) = pdfGenerator.generateFuelLogCsv(label, displayedLogs)
+            progress.dismiss()
+            if (success && filePath != null) {
+                shareFile(filePath, "text/csv")
+            } else {
+                Toast.makeText(this@FuelLogActivity, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun shareFile(filePath: String, mimeType: String) {
+        val file = File(filePath)
+        val uri = FileProvider.getUriForFile(this, "${packageName}.provider", file)
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+        startActivity(Intent.createChooser(shareIntent, "Share ${file.name}"))
     }
 
     private fun setupNavigation() {

@@ -218,4 +218,79 @@ class PdfGenerator(private val context: Context) {
             Pair(null, false)
         }
     }
+
+    suspend fun generateServiceRecordCsv(
+        vehicleRegistration: String,
+        serviceRecords: List<ServiceRecordActivity.ServiceRecord>
+    ): Pair<String?, Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val fileName = "ServiceRecords_${vehicleRegistration}_$timeStamp.csv"
+            val dir = if (Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED)
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            else context.filesDir
+            val file = File(dir, fileName)
+
+            file.bufferedWriter().use { writer ->
+                writer.write("Date,Odometer (km),Cost (Rs),Service Type,Services Performed,Notes\n")
+                serviceRecords.forEach { record ->
+                    val services = record.checkedItems?.joinToString("; ")?.csvEscape() ?: ""
+                    writer.write(
+                        "${record.date.csvEscape()}," +
+                        "${record.odometerReading.csvEscape()}," +
+                        "${record.serviceCost.csvEscape()}," +
+                        "${(record.serviceType ?: "").csvEscape()}," +
+                        "$services," +
+                        "${(record.notes ?: "").csvEscape()}\n"
+                    )
+                }
+            }
+            Pair(file.absolutePath, true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair(null, false)
+        }
+    }
+
+    suspend fun generateFuelLogCsv(
+        vehicleFilter: String,
+        fuelLogs: List<FuelLogActivity.FuelLog>
+    ): Pair<String?, Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val safeName = vehicleFilter.replace(" ", "_")
+            val fileName = "FuelLog_${safeName}_$timeStamp.csv"
+            val dir = if (Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED)
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            else context.filesDir
+            val file = File(dir, fileName)
+
+            file.bufferedWriter().use { writer ->
+                writer.write("Date,Vehicle,Odometer (km),Liters,Fuel Type,Price/L (Rs),Total Cost (Rs),Efficiency,Notes\n")
+                fuelLogs.forEach { log ->
+                    writer.write(
+                        "${log.date.csvEscape()}," +
+                        "${log.registrationNumber.csvEscape()}," +
+                        "${log.odometer.csvEscape()}," +
+                        "${log.liters.csvEscape()}," +
+                        "${log.fuelType.csvEscape()}," +
+                        "${log.pricePerLiter.csvEscape()}," +
+                        "${log.totalCost.csvEscape()}," +
+                        "${log.efficiency.csvEscape()}," +
+                        "${log.notes.csvEscape()}\n"
+                    )
+                }
+            }
+            Pair(file.absolutePath, true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair(null, false)
+        }
+    }
+
+    private fun String.csvEscape(): String {
+        return if (contains(',') || contains('"') || contains('\n')) {
+            "\"${replace("\"", "\"\"")}\""
+        } else this
+    }
 }
