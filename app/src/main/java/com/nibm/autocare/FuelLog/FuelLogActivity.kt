@@ -71,6 +71,10 @@ class FuelLogActivity : AppCompatActivity() {
             startActivity(Intent(this, AddFuelLogActivity::class.java))
         }
 
+        findViewById<View>(R.id.btnFuelTrend).setOnClickListener {
+            startActivity(Intent(this, FuelPriceTrendActivity::class.java))
+        }
+
         findViewById<View>(R.id.btnDownloadFuelPdf).setOnClickListener {
             if (displayedLogs.isEmpty()) {
                 Toast.makeText(this, "No fuel logs to export", Toast.LENGTH_SHORT).show()

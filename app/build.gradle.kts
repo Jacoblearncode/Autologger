@@ -87,5 +87,5 @@ dependencies {
     implementation ("com.itextpdf:kernel:7.2.3")
     implementation ("com.itextpdf:layout:7.2.3")
 
-
+    implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }

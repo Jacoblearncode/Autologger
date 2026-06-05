@@ -41,6 +41,10 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".FuelLog.FuelPriceTrendActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".AddFuelLogActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
