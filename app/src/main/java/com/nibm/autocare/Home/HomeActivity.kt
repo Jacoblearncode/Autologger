@@ -264,7 +264,8 @@ class HomeActivity : AppCompatActivity() {
                             model,
                             vehicleSnapshot.child("currentMileage").getValue(Int::class.java) ?: 0,
                             vehicleSnapshot.child("weeklyRidingDistance").getValue(Int::class.java) ?: 0,
-                            vehicleSnapshot.child("photoUrl").getValue(String::class.java) ?: ""
+                            vehicleSnapshot.child("photoUrl").getValue(String::class.java) ?: "",
+                            vehicleSnapshot.child("defaultImageUrl").getValue(String::class.java) ?: ""
                         )
                         originalVehicleList.add(vehicle)
                     }
@@ -378,7 +379,8 @@ class HomeActivity : AppCompatActivity() {
         val model: String,
         val currentMileage: Int = 0,
         val weeklyRidingDistance: Int = 0,
-        val photoUrl: String = ""
+        val photoUrl: String = "",
+        val defaultImageUrl: String = ""
     )
 
     inner class VehicleAdapter(private val vehicleList: List<Vehicle>) : BaseAdapter() {
@@ -405,15 +407,27 @@ class HomeActivity : AppCompatActivity() {
             viewHolder.tvManufacturedYear.text = vehicle.manufacturedYear
             viewHolder.tvModel.text = vehicle.model
 
-            if (vehicle.photoUrl.isNotEmpty()) {
-                Glide.with(parent!!.context)
-                    .load(vehicle.photoUrl)
-                    .circleCrop()
-                    .placeholder(R.drawable.ic_empty_vehicle)
-                    .into(viewHolder.ivVehiclePhoto)
-            } else {
-                viewHolder.ivVehiclePhoto.setImageDrawable(null)
-                viewHolder.ivVehiclePhoto.background = ContextCompat.getDrawable(parent!!.context, R.drawable.circle_gray_bg)
+            when {
+                vehicle.photoUrl.isNotEmpty() -> {
+                    Glide.with(parent!!.context)
+                        .load(vehicle.photoUrl)
+                        .circleCrop()
+                        .placeholder(R.drawable.circle_gray_bg)
+                        .into(viewHolder.ivVehiclePhoto)
+                }
+                vehicle.defaultImageUrl.isNotEmpty() -> {
+                    Glide.with(parent!!.context)
+                        .load(vehicle.defaultImageUrl)
+                        .centerCrop()
+                        .circleCrop()
+                        .placeholder(R.drawable.circle_gray_bg)
+                        .into(viewHolder.ivVehiclePhoto)
+                }
+                else -> {
+                    viewHolder.ivVehiclePhoto.setImageDrawable(null)
+                    viewHolder.ivVehiclePhoto.background =
+                        ContextCompat.getDrawable(parent!!.context, R.drawable.circle_gray_bg)
+                }
             }
 
             viewHolder.btnEdit.setOnClickListener {

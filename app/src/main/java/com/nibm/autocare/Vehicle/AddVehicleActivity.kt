@@ -38,6 +38,9 @@ import com.nibm.autocare.FuelLogActivity
 import com.nibm.autocare.HomeActivity
 import com.nibm.autocare.R
 import com.nibm.autocare.Reminder.ReminderScheduler
+import com.nibm.autocare.WikipediaImageFetcher
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 
 class AddVehicleActivity : AppCompatActivity() {
@@ -332,20 +335,28 @@ class AddVehicleActivity : AppCompatActivity() {
             return
         }
 
+        val progress = showProgressDialog("Saving vehicle...")
+
         if (selectedPhotoUri != null) {
-            val progress = showProgressDialog("Uploading photo...")
             uploadVehiclePhoto(selectedPhotoUri!!) { photoUrl ->
-                progress.dismiss()
-                persistNewVehicle(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, photoUrl)
+                lifecycleScope.launch {
+                    val wikiUrl = WikipediaImageFetcher.fetchCarImageUrl(selectedBrand, selectedModel)
+                    progress.dismiss()
+                    persistNewVehicle(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, photoUrl, wikiUrl)
+                }
             }
         } else {
-            persistNewVehicle(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, null)
+            lifecycleScope.launch {
+                val wikiUrl = WikipediaImageFetcher.fetchCarImageUrl(selectedBrand, selectedModel)
+                progress.dismiss()
+                persistNewVehicle(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, null, wikiUrl)
+            }
         }
     }
 
     private fun persistNewVehicle(
         userId: String, registrationNumber: String, manufacturedYear: String,
-        currentMileage: String, weeklyRidingDistance: String, photoUrl: String?
+        currentMileage: String, weeklyRidingDistance: String, photoUrl: String?, wikiUrl: String?
     ) {
         val vehicle = HashMap<String, Any>()
         vehicle["registrationNumber"] = registrationNumber
@@ -355,6 +366,7 @@ class AddVehicleActivity : AppCompatActivity() {
         vehicle["currentMileage"] = currentMileage.toInt()
         vehicle["weeklyRidingDistance"] = weeklyRidingDistance.toInt()
         photoUrl?.let { vehicle["photoUrl"] = it }
+        wikiUrl?.let { vehicle["defaultImageUrl"] = it }
 
         val usersVehiclesRef = database.reference.child("users_vehicles").child(userId)
         val newVehicleId = usersVehiclesRef.push().key ?: return
@@ -384,20 +396,28 @@ class AddVehicleActivity : AppCompatActivity() {
             return
         }
 
+        val progress = showProgressDialog("Updating vehicle...")
+
         if (selectedPhotoUri != null) {
-            val progress = showProgressDialog("Uploading photo...")
             uploadVehiclePhoto(selectedPhotoUri!!) { photoUrl ->
-                progress.dismiss()
-                persistVehicleUpdate(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, photoUrl ?: existingPhotoUrl)
+                lifecycleScope.launch {
+                    val wikiUrl = WikipediaImageFetcher.fetchCarImageUrl(selectedBrand, selectedModel)
+                    progress.dismiss()
+                    persistVehicleUpdate(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, photoUrl ?: existingPhotoUrl, wikiUrl)
+                }
             }
         } else {
-            persistVehicleUpdate(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, existingPhotoUrl)
+            lifecycleScope.launch {
+                val wikiUrl = WikipediaImageFetcher.fetchCarImageUrl(selectedBrand, selectedModel)
+                progress.dismiss()
+                persistVehicleUpdate(currentUser.uid, registrationNumber, manufacturedYear, currentMileage, weeklyRidingDistance, existingPhotoUrl, wikiUrl)
+            }
         }
     }
 
     private fun persistVehicleUpdate(
         userId: String, registrationNumber: String, manufacturedYear: String,
-        currentMileage: String, weeklyRidingDistance: String, photoUrl: String?
+        currentMileage: String, weeklyRidingDistance: String, photoUrl: String?, wikiUrl: String?
     ) {
         val updates = HashMap<String, Any>()
         updates["registrationNumber"] = registrationNumber
@@ -407,6 +427,7 @@ class AddVehicleActivity : AppCompatActivity() {
         updates["currentMileage"] = currentMileage.toInt()
         updates["weeklyRidingDistance"] = weeklyRidingDistance.toInt()
         photoUrl?.let { updates["photoUrl"] = it }
+        wikiUrl?.let { updates["defaultImageUrl"] = it }
 
         database.reference.child("users_vehicles").child(userId).child(vehicleId!!)
             .updateChildren(updates)
