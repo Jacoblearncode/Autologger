@@ -105,6 +105,12 @@ class ServiceRecordActivity : AppCompatActivity() {
             startActivity(Intent(this, FuelLogActivity::class.java))
         }
 
+        findViewById<View>(R.id.btnParts).setOnClickListener {
+            startActivity(Intent(this, PartsWarrantyActivity::class.java).apply {
+                putExtra("vehicleRegistration", vehicleRegistration)
+            })
+        }
+
         findViewById<View>(R.id.btnDocuments).setOnClickListener {
             val intent = Intent(this, VehicleDocumentsActivity::class.java)
             intent.putExtra("vehicleRegistration", vehicleRegistration)
