@@ -33,6 +33,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import org.json.JSONObject
 import com.nibm.autocare.AddServiceActivity
 import com.nibm.autocare.FuelLogActivity
 import com.nibm.autocare.HomeActivity
@@ -257,59 +258,92 @@ class AddVehicleActivity : AppCompatActivity() {
     }
 
     private fun loadBrands() {
+        try {
+            val json = assets.open("vehicle_brands.json").bufferedReader().readText()
+            val brandsObj = JSONObject(json).getJSONObject("vehicles").getJSONObject("brands")
+            brandList.clear()
+            brandList.addAll(brandsObj.keys().asSequence().sorted())
+            brandList.add(OTHER_OPTION)
+            setupBrandSpinner()
+        } catch (e: Exception) {
+            loadBrandsFromFirebase()
+        }
+    }
+
+    private fun loadBrandsFromFirebase() {
         brandsRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 brandList.clear()
                 for (brandSnapshot in snapshot.children) {
-                    val brand = brandSnapshot.key ?: continue
-                    brandList.add(brand)
+                    brandSnapshot.key?.let { brandList.add(it) }
                 }
                 brandList.add(OTHER_OPTION)
-                val brandAdapter = ArrayAdapter(this@AddVehicleActivity, android.R.layout.simple_spinner_item, brandList)
-                brandAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                spinnerBrand.adapter = brandAdapter
-
-                if (isEditMode && selectedBrand.isNotEmpty()) {
-                    val pos = brandList.indexOf(selectedBrand)
-                    if (pos != -1) {
-                        spinnerBrand.setSelection(pos)
-                    } else {
-                        spinnerBrand.setSelection(brandList.indexOf(OTHER_OPTION).coerceAtLeast(0))
-                        etCustomBrand.setText(selectedBrand)
-                        etCustomBrand.visibility = View.VISIBLE
-                    }
-                }
+                setupBrandSpinner()
             }
-
             override fun onCancelled(error: DatabaseError) {
                 Toast.makeText(this@AddVehicleActivity, "Failed to load brands", Toast.LENGTH_SHORT).show()
             }
         })
     }
 
+    private fun setupBrandSpinner() {
+        val brandAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, brandList)
+        brandAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerBrand.adapter = brandAdapter
+        if (isEditMode && selectedBrand.isNotEmpty()) {
+            val pos = brandList.indexOf(selectedBrand)
+            if (pos != -1) spinnerBrand.setSelection(pos)
+            else {
+                spinnerBrand.setSelection(brandList.indexOf(OTHER_OPTION).coerceAtLeast(0))
+                etCustomBrand.setText(selectedBrand)
+                etCustomBrand.visibility = View.VISIBLE
+            }
+        }
+    }
+
     private fun loadModels(selectedBrand: String) {
+        try {
+            val json = assets.open("vehicle_brands.json").bufferedReader().readText()
+            val brandsObj = JSONObject(json).getJSONObject("vehicles").getJSONObject("brands")
+            modelList.clear()
+            val brandObj = brandsObj.optJSONObject(selectedBrand)
+            if (brandObj != null) {
+                val modelsArray = brandObj.getJSONArray("models")
+                for (i in 0 until modelsArray.length()) {
+                    modelList.add(modelsArray.getString(i))
+                }
+            }
+            modelList.add(OTHER_OPTION)
+            setupModelSpinner()
+        } catch (e: Exception) {
+            loadModelsFromFirebase(selectedBrand)
+        }
+    }
+
+    private fun loadModelsFromFirebase(selectedBrand: String) {
         brandsRef.child(selectedBrand).child("models").addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 modelList.clear()
                 for (modelSnapshot in snapshot.children) {
-                    val model = modelSnapshot.getValue(String::class.java) ?: continue
-                    modelList.add(model)
+                    modelSnapshot.getValue(String::class.java)?.let { modelList.add(it) }
                 }
                 modelList.add(OTHER_OPTION)
-                val modelAdapter = ArrayAdapter(this@AddVehicleActivity, android.R.layout.simple_spinner_item, modelList)
-                modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                spinnerModel.adapter = modelAdapter
-
-                if (isEditMode && selectedModel.isNotEmpty()) {
-                    val pos = modelList.indexOf(selectedModel)
-                    if (pos != -1) spinnerModel.setSelection(pos)
-                }
+                setupModelSpinner()
             }
-
             override fun onCancelled(error: DatabaseError) {
                 Toast.makeText(this@AddVehicleActivity, "Failed to load models", Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    private fun setupModelSpinner() {
+        val modelAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, modelList)
+        modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerModel.adapter = modelAdapter
+        if (isEditMode && selectedModel.isNotEmpty()) {
+            val pos = modelList.indexOf(selectedModel)
+            if (pos != -1) spinnerModel.setSelection(pos)
+        }
     }
 
     private fun resolveCustomInputs() {
