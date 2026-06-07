@@ -312,17 +312,17 @@
 
     </LinearLayout>
 
-    <!-- List to Display Vehicle Data -->
-    <ListView
-        android:id="@+id/lvServiceRecords"
+    <!-- Service record list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvServiceRecords"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@id/footer"
         android:layout_below="@id/summaryCard"
-        android:divider="@color/bg_primary"
-        android:dividerHeight="8dp"
         android:background="@color/bg_primary"
-        android:padding="16dp"/>
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:clipToPadding="false" />
 
     <!-- PDF Download Button - Bottom Right -->
     <ImageButton

@@ -134,16 +134,18 @@
   </LinearLayout>
 
   <!-- Vehicle list -->
-  <ListView
-      android:id="@+id/lvEmails"
+  <androidx.recyclerview.widget.RecyclerView
+      android:id="@+id/rvVehicles"
       android:layout_width="match_parent"
       android:layout_height="0dp"
       android:layout_weight="1"
       android:layout_marginTop="8dp"
-      android:divider="@color/bg_primary"
-      android:dividerHeight="10dp"
       android:background="@color/bg_primary"
-      android:padding="12dp" />
+      android:paddingStart="12dp"
+      android:paddingEnd="12dp"
+      android:paddingTop="4dp"
+      android:paddingBottom="12dp"
+      android:clipToPadding="false" />
 
   <include
       layout="@layout/footer"

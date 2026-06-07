@@ -18,6 +18,7 @@ import java.io.FileOutputStream
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
+import com.nibm.autocare.model.ServiceRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -25,7 +26,7 @@ class PdfGenerator(private val context: Context) {
 
     suspend fun generateServiceRecordPdf(
         vehicleRegistration: String,
-        serviceRecords: List<ServiceRecordActivity.ServiceRecord>
+        serviceRecords: List<ServiceRecord>
     ): Pair<String?, Boolean> = withContext(Dispatchers.IO) {
         try {
             val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
@@ -75,7 +76,7 @@ class PdfGenerator(private val context: Context) {
         }
     }
 
-    private fun addServiceRecord(document: Document, record: ServiceRecordActivity.ServiceRecord) {
+    private fun addServiceRecord(document: Document, record: ServiceRecord) {
         // Add date
         document.add(
             Paragraph("Date: ${record.date}")
@@ -221,7 +222,7 @@ class PdfGenerator(private val context: Context) {
 
     suspend fun generateServiceRecordCsv(
         vehicleRegistration: String,
-        serviceRecords: List<ServiceRecordActivity.ServiceRecord>
+        serviceRecords: List<ServiceRecord>
     ): Pair<String?, Boolean> = withContext(Dispatchers.IO) {
         try {
             val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())

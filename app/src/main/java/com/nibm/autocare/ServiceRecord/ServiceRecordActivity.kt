@@ -1,34 +1,33 @@
 package com.nibm.autocare
 
 import android.Manifest
-import android.app.Dialog
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import android.widget.*
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.bumptech.glide.Glide
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.nibm.autocare.Vehicle.AddVehicleActivity
-import androidx.lifecycle.lifecycleScope
+import com.nibm.autocare.adapter.ServiceRecordAdapter
+import com.nibm.autocare.model.ServiceRecord
 import kotlinx.coroutines.launch
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 
 class ServiceRecordActivity : AppCompatActivity() {
 
-    private lateinit var lvServiceRecords: ListView
+    private lateinit var rvServiceRecords: RecyclerView
+    private lateinit var serviceRecordAdapter: ServiceRecordAdapter
     private lateinit var auth: FirebaseAuth
     private lateinit var database: FirebaseDatabase
     private lateinit var vehicleRegistration: String
@@ -55,7 +54,6 @@ class ServiceRecordActivity : AppCompatActivity() {
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.READ_EXTERNAL_STORAGE
         )
-        private const val DELETE_CONFIRMATION = 1
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,6 +61,7 @@ class ServiceRecordActivity : AppCompatActivity() {
         setContentView(R.layout.activity_service_record)
 
         initializeComponents()
+        setupRecyclerView()
         setupClickListeners()
         fetchServiceRecords()
         fetchFuelSummary()
@@ -74,8 +73,6 @@ class ServiceRecordActivity : AppCompatActivity() {
         pdfGenerator = PdfGenerator(this)
         vehicleRegistration = intent.getStringExtra("vehicleRegistration") ?: ""
         findViewById<TextView>(R.id.tvAppName).text = "Services for $vehicleRegistration"
-        lvServiceRecords = findViewById(R.id.lvServiceRecords)
-        lvServiceRecords.setEmptyView(findViewById(R.id.emptyStateServices))
 
         tvSvcTotal = findViewById(R.id.tvSvcTotal)
         tvFuelTotal = findViewById(R.id.tvFuelTotal)
@@ -86,43 +83,56 @@ class ServiceRecordActivity : AppCompatActivity() {
         tvRecordCount = findViewById(R.id.tvRecordCount)
 
         val currentUser = auth.currentUser
-        servicesRef = database.reference.child("users_services").child(currentUser?.uid ?: "").child(vehicleRegistration)
+        servicesRef = database.reference
+            .child("users_services")
+            .child(currentUser?.uid ?: "")
+            .child(vehicleRegistration)
+    }
+
+    private fun setupRecyclerView() {
+        rvServiceRecords = findViewById(R.id.rvServiceRecords)
+        rvServiceRecords.layoutManager = LinearLayoutManager(this)
+
+        serviceRecordAdapter = ServiceRecordAdapter(
+            onDeleteClick = { recordId -> showDeleteConfirmation(recordId) }
+        )
+        rvServiceRecords.adapter = serviceRecordAdapter
+    }
+
+    private fun updateEmptyState() {
+        val isEmpty = currentServiceRecords.isEmpty()
+        rvServiceRecords.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.emptyStateServices).visibility = if (isEmpty) View.VISIBLE else View.GONE
     }
 
     private fun setupClickListeners() {
         findViewById<View>(R.id.llHome).setOnClickListener {
             startActivity(Intent(this, HomeActivity::class.java))
         }
-
         findViewById<View>(R.id.llAddVehicle).setOnClickListener {
             startActivity(Intent(this, AddVehicleActivity::class.java))
         }
-
         findViewById<View>(R.id.llAddService).setOnClickListener {
             startActivity(Intent(this, AddServiceActivity::class.java))
         }
         findViewById<View>(R.id.llFuelLog).setOnClickListener {
             startActivity(Intent(this, FuelLogActivity::class.java))
         }
-
         findViewById<View>(R.id.btnTrips).setOnClickListener {
             startActivity(Intent(this, TripLogActivity::class.java).apply {
                 putExtra("vehicleRegistration", vehicleRegistration)
             })
         }
-
         findViewById<View>(R.id.btnParts).setOnClickListener {
             startActivity(Intent(this, PartsWarrantyActivity::class.java).apply {
                 putExtra("vehicleRegistration", vehicleRegistration)
             })
         }
-
         findViewById<View>(R.id.btnDocuments).setOnClickListener {
-            val intent = Intent(this, VehicleDocumentsActivity::class.java)
-            intent.putExtra("vehicleRegistration", vehicleRegistration)
-            startActivity(intent)
+            startActivity(Intent(this, VehicleDocumentsActivity::class.java).apply {
+                putExtra("vehicleRegistration", vehicleRegistration)
+            })
         }
-
         findViewById<View>(R.id.btnDownloadPdf).setOnClickListener {
             if (currentServiceRecords.isEmpty()) {
                 showToast("No service records to export")
@@ -141,15 +151,15 @@ class ServiceRecordActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        fetchServiceRecords()
+    }
+
     override fun onStop() {
         super.onStop()
         servicesListener?.let { servicesRef.removeEventListener(it) }
         servicesListener = null
-    }
-
-    override fun onStart() {
-        super.onStart()
-        fetchServiceRecords()
     }
 
     private fun fetchServiceRecords() {
@@ -157,12 +167,11 @@ class ServiceRecordActivity : AppCompatActivity() {
             override fun onDataChange(snapshot: DataSnapshot) {
                 currentServiceRecords.clear()
                 for (serviceSnapshot in snapshot.children) {
-                    parseServiceRecord(serviceSnapshot)?.let {
-                        currentServiceRecords.add(it)
-                    }
+                    parseServiceRecord(serviceSnapshot)?.let { currentServiceRecords.add(it) }
                 }
                 currentServiceRecords.sortByDescending { it.date }
-                lvServiceRecords.adapter = ServiceRecordAdapter(currentServiceRecords, this@ServiceRecordActivity)
+                serviceRecordAdapter.submitList(currentServiceRecords.toList())
+                updateEmptyState()
                 updateServiceSummary()
             }
 
@@ -183,7 +192,6 @@ class ServiceRecordActivity : AppCompatActivity() {
             val notes = serviceSnapshot.child("notes").getValue(String::class.java)
             val photoUrls = serviceSnapshot.child("photoUrls").children.mapNotNull { it.getValue(String::class.java) }
             val recordId = serviceSnapshot.key ?: ""
-
             ServiceRecord(date, odometerReading, serviceCost, serviceType, checkedItems, notes, photoUrls, recordId)
         } catch (e: Exception) {
             null
@@ -206,15 +214,11 @@ class ServiceRecordActivity : AppCompatActivity() {
     }
 
     private fun updateCombinedTotal(svcTotal: Double) {
-        val combined = svcTotal + totalFuelCost
-        tvCombinedTotal.text = "Rs ${formatAmount(combined)}"
+        tvCombinedTotal.text = "Rs ${formatAmount(svcTotal + totalFuelCost)}"
     }
 
     private fun updateNextService() {
-        if (lastServiceOdometer == 0.0) {
-            tvNextService.text = "—"
-            return
-        }
+        if (lastServiceOdometer == 0.0) { tvNextService.text = "—"; return }
         val nextDue = lastServiceOdometer + 5000
         val currentEst = maxOf(maxFuelOdometer, lastServiceOdometer)
         val remaining = nextDue - currentEst
@@ -225,7 +229,7 @@ class ServiceRecordActivity : AppCompatActivity() {
             }
             remaining <= 1000 -> {
                 tvNextService.text = "%.0f km".format(remaining)
-                tvNextService.setTextColor(ContextCompat.getColor(this, R.color.yellow))
+                tvNextService.setTextColor(ContextCompat.getColor(this, R.color.accent_lime))
             }
             else -> {
                 tvNextService.text = "%.0f km".format(remaining)
@@ -237,11 +241,8 @@ class ServiceRecordActivity : AppCompatActivity() {
     private fun updateCostPerKm(svcTotal: Double) {
         val currentEst = maxOf(maxFuelOdometer, lastServiceOdometer)
         val kmRange = currentEst - minAllOdometer
-        if (kmRange > 0) {
-            tvCostPerKm.text = "Rs %.2f/km".format((svcTotal + totalFuelCost) / kmRange)
-        } else {
-            tvCostPerKm.text = "— /km"
-        }
+        tvCostPerKm.text = if (kmRange > 0) "Rs %.2f/km".format((svcTotal + totalFuelCost) / kmRange)
+        else "— /km"
     }
 
     private fun fetchFuelSummary() {
@@ -249,10 +250,10 @@ class ServiceRecordActivity : AppCompatActivity() {
         database.reference.child("users_fuel_logs").child(uid)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    val logs = mutableListOf<Pair<Double, Double>>() // odometer, liters
-
+                    val logs = mutableListOf<Pair<Double, Double>>()
                     totalFuelCost = 0.0
                     maxFuelOdometer = 0.0
+
                     for (child in snapshot.children) {
                         val reg = child.child("registrationNumber").getValue(String::class.java) ?: continue
                         if (reg != vehicleRegistration) continue
@@ -270,7 +271,6 @@ class ServiceRecordActivity : AppCompatActivity() {
                     }
 
                     tvFuelTotal.text = "Rs ${formatAmount(totalFuelCost)}"
-
                     val svcTotal = currentServiceRecords.sumOf { it.serviceCost.toDoubleOrNull() ?: 0.0 }
                     updateCombinedTotal(svcTotal)
                     updateNextService()
@@ -297,283 +297,76 @@ class ServiceRecordActivity : AppCompatActivity() {
             })
     }
 
-    private fun formatAmount(value: Double): String {
-        return if (value == 0.0) "0" else "%,.0f".format(value)
-    }
+    private fun formatAmount(value: Double): String =
+        if (value == 0.0) "0" else "%,.0f".format(value)
 
     private fun deleteServiceRecord(recordId: String) {
         servicesRef.child(recordId).removeValue()
-            .addOnSuccessListener {
-                showToast("Service record deleted successfully")
-            }
-            .addOnFailureListener {
-                showToast("Failed to delete service record")
-            }
+            .addOnSuccessListener { showToast("Service record deleted") }
+            .addOnFailureListener { showToast("Failed to delete service record") }
     }
 
     private fun showDeleteConfirmation(recordId: String) {
         AlertDialog.Builder(this)
             .setTitle("Delete Service Record")
             .setMessage("Are you sure you want to delete this service record?")
-            .setPositiveButton("Delete") { _, _ ->
-                deleteServiceRecord(recordId)
-            }
+            .setPositiveButton("Delete") { _, _ -> deleteServiceRecord(recordId) }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
     private fun generateAndDownloadCsv() {
-        val progressDialog = AlertDialog.Builder(this)
-            .setMessage("Generating CSV...")
-            .setCancelable(false)
-            .create()
+        val progressDialog = AlertDialog.Builder(this).setMessage("Generating CSV...").setCancelable(false).create()
         progressDialog.show()
-
         lifecycleScope.launch {
             val (filePath, success) = pdfGenerator.generateServiceRecordCsv(vehicleRegistration, currentServiceRecords)
             progressDialog.dismiss()
-            if (success && filePath != null) {
-                shareFile(filePath, "text/csv")
-            } else {
-                Toast.makeText(this@ServiceRecordActivity, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
-            }
+            if (success && filePath != null) shareFile(filePath, "text/csv")
+            else Toast.makeText(this@ServiceRecordActivity, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun generateAndDownloadPdf() {
-        val progressDialog = AlertDialog.Builder(this)
-            .setMessage("Generating PDF...")
-            .setCancelable(false)
-            .create()
+        val progressDialog = AlertDialog.Builder(this).setMessage("Generating PDF...").setCancelable(false).create()
         progressDialog.show()
-
         lifecycleScope.launch {
             val (filePath, success) = pdfGenerator.generateServiceRecordPdf(vehicleRegistration, currentServiceRecords)
             progressDialog.dismiss()
-            if (success && filePath != null) {
-                shareFile(filePath, "application/pdf")
-            } else {
-                Toast.makeText(this@ServiceRecordActivity, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
-            }
+            if (success && filePath != null) shareFile(filePath, "application/pdf")
+            else Toast.makeText(this@ServiceRecordActivity, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun shareFile(filePath: String, mimeType: String) {
         val file = File(filePath)
         val uri = FileProvider.getUriForFile(this, "${packageName}.provider", file)
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = mimeType
-            putExtra(Intent.EXTRA_STREAM, uri)
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        }
-        startActivity(Intent.createChooser(shareIntent, "Share ${file.name}"))
+        startActivity(Intent.createChooser(
+            Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, uri)
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            },
+            "Share ${file.name}"
+        ))
     }
 
-    private fun hasStoragePermissions(): Boolean {
-        return REQUIRED_PERMISSIONS.all {
-            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
-        }
-    }
+    private fun hasStoragePermissions(): Boolean =
+        REQUIRED_PERMISSIONS.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
 
     private fun requestStoragePermissions() {
-        ActivityCompat.requestPermissions(
-            this,
-            REQUIRED_PERMISSIONS,
-            STORAGE_PERMISSION_CODE
-        )
+        ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, STORAGE_PERMISSION_CODE)
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == STORAGE_PERMISSION_CODE) {
             if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
                 generateAndDownloadPdf()
             } else {
-                if (shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                    showPermissionExplanation()
-                } else {
-                    Toast.makeText(
-                        this,
-                        "Permission denied. You can enable it in app settings.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                Toast.makeText(this, "Permission denied. Enable it in app settings.", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    private fun showPermissionExplanation() {
-        AlertDialog.Builder(this)
-            .setTitle("Permission Needed")
-            .setMessage("This permission is required to save PDF files to your device")
-            .setPositiveButton("Grant") { _, _ ->
-                requestStoragePermissions()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-
-    inner class ServiceRecordAdapter(
-        private val serviceList: List<ServiceRecord>,
-        private val context: Context
-    ) : BaseAdapter() {
-        private val expandedPositions = mutableSetOf<Int>()
-        private val imageSize = 250.dpToPx()
-
-        override fun getCount(): Int = serviceList.size
-        override fun getItem(position: Int): Any = serviceList[position]
-        override fun getItemId(position: Int): Long = position.toLong()
-
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-            val view: View
-            val viewHolder: ViewHolder
-
-            if (convertView == null) {
-                view = LayoutInflater.from(parent?.context)
-                    .inflate(R.layout.list_item_service_timeline, parent, false)
-                viewHolder = ViewHolder(view)
-                view.tag = viewHolder
-            } else {
-                view = convertView
-                viewHolder = view.tag as ViewHolder
-                viewHolder.imageContainer.removeAllViews()
-            }
-
-            val service = serviceList[position]
-            setupBasicInfo(viewHolder, service)
-            setupExpandedDetails(viewHolder, service)
-            setupImages(viewHolder, service)
-            setupDeleteButton(viewHolder, service)
-            setupExpandCollapse(view, viewHolder, position)
-            setupTimelineLines(viewHolder, position)
-
-            return view
-        }
-
-        private fun setupBasicInfo(viewHolder: ViewHolder, service: ServiceRecord) {
-            viewHolder.tvOdometerReading.text = "${service.odometerReading} km"
-            viewHolder.tvServiceDate.text = service.date
-            viewHolder.tvServiceCost.text = "Rs ${service.serviceCost}"
-            service.serviceType?.let {
-                viewHolder.tvServiceType.text = it
-                viewHolder.tvServiceType.visibility = View.VISIBLE
-            } ?: run { viewHolder.tvServiceType.visibility = View.GONE }
-        }
-
-        private fun setupExpandedDetails(viewHolder: ViewHolder, service: ServiceRecord) {
-            service.checkedItems?.let {
-                viewHolder.tvCheckedItems.text = "Services:\n${it.joinToString("\n• ", "• ")}"
-                viewHolder.tvCheckedItems.visibility = View.VISIBLE
-            } ?: run { viewHolder.tvCheckedItems.visibility = View.GONE }
-
-            service.notes?.let {
-                viewHolder.tvNotes.text = "Notes: $it"
-                viewHolder.tvNotes.visibility = View.VISIBLE
-            } ?: run { viewHolder.tvNotes.visibility = View.GONE }
-        }
-
-        private fun setupImages(viewHolder: ViewHolder, service: ServiceRecord) {
-            service.photoUrls?.takeIf { it.isNotEmpty() }?.forEach { url ->
-                val imageView = ImageView(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(imageSize, imageSize).apply {
-                        marginEnd = 8.dpToPx()
-                    }
-                    scaleType = ImageView.ScaleType.CENTER_CROP
-                    adjustViewBounds = true
-                    clipToOutline = true
-                    background = ContextCompat.getDrawable(context, R.drawable.image_border)
-                }
-
-                Glide.with(context)
-                    .load(url)
-                    .placeholder(R.drawable.placeholder_image)
-                    .error(R.drawable.error_image)
-                    .into(imageView)
-
-                imageView.setOnClickListener { showFullImageDialog(url) }
-                viewHolder.imageContainer.addView(imageView)
-            }
-        }
-
-        private fun setupDeleteButton(viewHolder: ViewHolder, service: ServiceRecord) {
-            viewHolder.btnDelete.setOnClickListener {
-                showDeleteConfirmation(service.recordId)
-            }
-        }
-
-        private fun setupTimelineLines(viewHolder: ViewHolder, position: Int) {
-            viewHolder.viewLineTop.visibility =
-                if (position == 0) View.INVISIBLE else View.VISIBLE
-            viewHolder.viewLineBottom.visibility =
-                if (position == count - 1) View.INVISIBLE else View.VISIBLE
-        }
-
-        private fun setupExpandCollapse(view: View, viewHolder: ViewHolder, position: Int) {
-            viewHolder.llExpandedDetails.visibility =
-                if (expandedPositions.contains(position)) View.VISIBLE else View.GONE
-
-            view.setOnClickListener {
-                if (expandedPositions.contains(position)) {
-                    expandedPositions.remove(position)
-                } else {
-                    expandedPositions.add(position)
-                }
-                notifyDataSetChanged()
-            }
-        }
-
-        private fun showFullImageDialog(imageUrl: String) {
-            Dialog(context).apply {
-                setContentView(R.layout.dialog_full_image)
-                window?.setLayout(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-                findViewById<ImageView>(R.id.ivFullImage).let { imageView ->
-                    Glide.with(context)
-                        .load(imageUrl)
-                        .into(imageView)
-                }
-                findViewById<View>(R.id.btnClose).setOnClickListener { dismiss() }
-                show()
-            }
-        }
-
-        private inner class ViewHolder(view: View) {
-            val tvOdometerReading: TextView = view.findViewById(R.id.tvOdometerReading)
-            val tvServiceDate: TextView = view.findViewById(R.id.tvServiceDate)
-            val tvServiceCost: TextView = view.findViewById(R.id.tvServiceCost)
-            val tvServiceType: TextView = view.findViewById(R.id.tvServiceType)
-            val tvCheckedItems: TextView = view.findViewById(R.id.tvCheckedItems)
-            val tvNotes: TextView = view.findViewById(R.id.tvNotes)
-            val llExpandedDetails: LinearLayout = view.findViewById(R.id.llExpandedDetails)
-            val imageContainer: LinearLayout = view.findViewById(R.id.imageContainer)
-            val btnDelete: ImageButton = view.findViewById(R.id.btnDelete)
-            val viewLineTop: View = view.findViewById(R.id.viewLineTop)
-            val viewDot: View = view.findViewById(R.id.viewDot)
-            val viewLineBottom: View = view.findViewById(R.id.viewLineBottom)
-        }
-
-        private fun Int.dpToPx(): Int = (this * context.resources.displayMetrics.density).toInt()
-    }
-
-    data class ServiceRecord(
-        val date: String,
-        val odometerReading: String,
-        val serviceCost: String,
-        val serviceType: String? = null,
-        val checkedItems: List<String>? = null,
-        val notes: String? = null,
-        val photoUrls: List<String>? = null,
-        val recordId: String = ""
-    )
-
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
+    private fun showToast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 }
