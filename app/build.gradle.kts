@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
+    implementation ("androidx.viewpager2:viewpager2:1.0.0")
 
     implementation ("com.itextpdf:itext7-core:7.2.3")
     implementation ("com.itextpdf:html2pdf:4.0.3")

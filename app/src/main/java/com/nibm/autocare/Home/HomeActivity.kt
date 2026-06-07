@@ -28,6 +28,7 @@ import com.nibm.autocare.Home.VehicleViewModelFactory
 import com.nibm.autocare.Vehicle.AddVehicleActivity
 import com.nibm.autocare.adapter.VehicleAdapter
 import com.nibm.autocare.model.Vehicle
+import com.nibm.autocare.ServiceRecord.ServiceRecordActivity
 
 class HomeActivity : AppCompatActivity() {
 

@@ -1,4 +1,4 @@
-package com.nibm.autocare
+package com.nibm.autocare.ServiceRecord
 
 import android.Manifest
 import android.content.Intent
@@ -15,30 +15,31 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import com.google.firebase.auth.FirebaseAuth
-import com.nibm.autocare.ServiceRecord.ServiceViewModel
-import com.nibm.autocare.ServiceRecord.ServiceViewModelFactory
+import com.nibm.autocare.AddServiceActivity
+import com.nibm.autocare.FuelLogActivity
+import com.nibm.autocare.HomeActivity
+import com.nibm.autocare.PartsWarrantyActivity
+import com.nibm.autocare.PdfGenerator
+import com.nibm.autocare.R
+import com.nibm.autocare.TripLogActivity
 import com.nibm.autocare.Vehicle.AddVehicleActivity
-import com.nibm.autocare.adapter.ServiceRecordAdapter
+import com.nibm.autocare.VehicleDocumentsActivity
 import kotlinx.coroutines.launch
 import java.io.File
 
+/**
+ * Container activity for the service record screen.
+ * Owns ServiceViewModel and exposes it to child Fragments via requireActivity().
+ * The two tabs (Timeline / Summary) are managed by ServicesFragment and StatsFragment.
+ */
 class ServiceRecordActivity : AppCompatActivity() {
 
-    private lateinit var viewModel: ServiceViewModel
-    private lateinit var rvServiceRecords: RecyclerView
-    private lateinit var serviceRecordAdapter: ServiceRecordAdapter
+    lateinit var viewModel: ServiceViewModel
     private lateinit var pdfGenerator: PdfGenerator
-
-    private lateinit var tvSvcTotal: TextView
-    private lateinit var tvFuelTotal: TextView
-    private lateinit var tvCombinedTotal: TextView
-    private lateinit var tvAvgEfficiency: TextView
-    private lateinit var tvCostPerKm: TextView
-    private lateinit var tvNextService: TextView
-    private lateinit var tvRecordCount: TextView
 
     companion object {
         private const val STORAGE_PERMISSION_CODE = 1001
@@ -56,77 +57,29 @@ class ServiceRecordActivity : AppCompatActivity() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
         pdfGenerator = PdfGenerator(this)
 
-        findViewById<TextView>(R.id.tvAppName).text = "Services for $vehicleRegistration"
-        tvSvcTotal = findViewById(R.id.tvSvcTotal)
-        tvFuelTotal = findViewById(R.id.tvFuelTotal)
-        tvCombinedTotal = findViewById(R.id.tvCombinedTotal)
-        tvAvgEfficiency = findViewById(R.id.tvAvgEfficiency)
-        tvCostPerKm = findViewById(R.id.tvCostPerKm)
-        tvNextService = findViewById(R.id.tvNextService)
-        tvRecordCount = findViewById(R.id.tvRecordCount)
-
-        setupRecyclerView()
-        setupClickListeners(vehicleRegistration)
-
+        // Create ViewModel before Fragments are attached so they can retrieve it
         viewModel = ViewModelProvider(
             this, ServiceViewModelFactory(userId, vehicleRegistration)
         )[ServiceViewModel::class.java]
 
-        observeViewModel()
+        findViewById<TextView>(R.id.tvAppName).text = "Services for $vehicleRegistration"
+        setupTabs()
+        setupNavButtons(vehicleRegistration)
+        setupPdfButton(vehicleRegistration)
     }
 
-    private fun setupRecyclerView() {
-        rvServiceRecords = findViewById(R.id.rvServiceRecords)
-        rvServiceRecords.layoutManager = LinearLayoutManager(this)
-        serviceRecordAdapter = ServiceRecordAdapter(
-            onDeleteClick = { recordId ->
-                AlertDialog.Builder(this)
-                    .setTitle("Delete Service Record")
-                    .setMessage("Are you sure you want to delete this service record?")
-                    .setPositiveButton("Delete") { _, _ -> viewModel.deleteServiceRecord(recordId) }
-                    .setNegativeButton("Cancel", null)
-                    .show()
-            }
-        )
-        rvServiceRecords.adapter = serviceRecordAdapter
+    private fun setupTabs() {
+        val pager = findViewById<ViewPager2>(R.id.viewPager)
+        pager.adapter = ServicePagerAdapter(this)
+
+        TabLayoutMediator(
+            findViewById(R.id.tabLayout), pager
+        ) { tab, position ->
+            tab.text = if (position == 0) "Timeline" else "Summary"
+        }.attach()
     }
 
-    private fun observeViewModel() {
-        viewModel.serviceRecords.observe(this) { records ->
-            serviceRecordAdapter.submitList(records)
-            val isEmpty = records.isEmpty()
-            rvServiceRecords.visibility = if (isEmpty) View.GONE else View.VISIBLE
-            findViewById<View>(R.id.emptyStateServices).visibility = if (isEmpty) View.VISIBLE else View.GONE
-        }
-
-        // MediatorLiveData fires whenever service records OR fuel data updates
-        viewModel.combinedStats.observe(this) { stats ->
-            tvSvcTotal.text = "Rs ${formatAmount(stats.svcTotal)}"
-            tvFuelTotal.text = "Rs ${formatAmount(stats.fuelTotal)}"
-            tvCombinedTotal.text = "Rs ${formatAmount(stats.combinedTotal)}"
-            tvRecordCount.text = "${stats.recordCount}"
-            tvAvgEfficiency.text = stats.avgEfficiency
-            tvCostPerKm.text = stats.costPerKm
-
-            when {
-                stats.nextServiceKm < 0 -> tvNextService.text = "—"
-                stats.nextServiceKm <= 0 -> {
-                    tvNextService.text = "OVERDUE"
-                    tvNextService.setTextColor(ContextCompat.getColor(this, R.color.red))
-                }
-                stats.nextServiceKm <= 1000 -> {
-                    tvNextService.text = "%.0f km".format(stats.nextServiceKm)
-                    tvNextService.setTextColor(ContextCompat.getColor(this, R.color.accent_lime))
-                }
-                else -> {
-                    tvNextService.text = "%.0f km".format(stats.nextServiceKm)
-                    tvNextService.setTextColor(ContextCompat.getColor(this, R.color.white))
-                }
-            }
-        }
-    }
-
-    private fun setupClickListeners(vehicleRegistration: String) {
+    private fun setupNavButtons(vehicleRegistration: String) {
         findViewById<View>(R.id.llHome).setOnClickListener {
             startActivity(Intent(this, HomeActivity::class.java))
         }
@@ -154,6 +107,9 @@ class ServiceRecordActivity : AppCompatActivity() {
                 putExtra("vehicleRegistration", vehicleRegistration)
             })
         }
+    }
+
+    private fun setupPdfButton(vehicleRegistration: String) {
         findViewById<View>(R.id.btnDownloadPdf).setOnClickListener {
             val records = viewModel.serviceRecords.value ?: emptyList()
             if (records.isEmpty()) {
@@ -174,25 +130,25 @@ class ServiceRecordActivity : AppCompatActivity() {
     }
 
     private fun generatePdf(vehicleRegistration: String) {
-        val progressDialog = AlertDialog.Builder(this).setMessage("Generating PDF...").setCancelable(false).create()
-        progressDialog.show()
+        val dialog = AlertDialog.Builder(this).setMessage("Generating PDF...").setCancelable(false).create()
+        dialog.show()
         lifecycleScope.launch {
             val records = viewModel.serviceRecords.value ?: emptyList()
-            val (filePath, success) = pdfGenerator.generateServiceRecordPdf(vehicleRegistration, records)
-            progressDialog.dismiss()
-            if (success && filePath != null) shareFile(filePath, "application/pdf")
+            val (path, ok) = pdfGenerator.generateServiceRecordPdf(vehicleRegistration, records)
+            dialog.dismiss()
+            if (ok && path != null) shareFile(path, "application/pdf")
             else Toast.makeText(this@ServiceRecordActivity, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun generateCsv(vehicleRegistration: String) {
-        val progressDialog = AlertDialog.Builder(this).setMessage("Generating CSV...").setCancelable(false).create()
-        progressDialog.show()
+        val dialog = AlertDialog.Builder(this).setMessage("Generating CSV...").setCancelable(false).create()
+        dialog.show()
         lifecycleScope.launch {
             val records = viewModel.serviceRecords.value ?: emptyList()
-            val (filePath, success) = pdfGenerator.generateServiceRecordCsv(vehicleRegistration, records)
-            progressDialog.dismiss()
-            if (success && filePath != null) shareFile(filePath, "text/csv")
+            val (path, ok) = pdfGenerator.generateServiceRecordCsv(vehicleRegistration, records)
+            dialog.dismiss()
+            if (ok && path != null) shareFile(path, "text/csv")
             else Toast.makeText(this@ServiceRecordActivity, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
         }
     }
@@ -210,24 +166,23 @@ class ServiceRecordActivity : AppCompatActivity() {
         ))
     }
 
-    private fun formatAmount(value: Double): String =
-        if (value == 0.0) "0" else "%,.0f".format(value)
-
     private fun hasStoragePermissions(): Boolean =
-        REQUIRED_PERMISSIONS.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
+        REQUIRED_PERMISSIONS.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
 
     private fun requestStoragePermissions() {
         ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, STORAGE_PERMISSION_CODE)
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == STORAGE_PERMISSION_CODE) {
-            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                generatePdf(viewModel.vehicleRegistration)
-            } else {
-                Toast.makeText(this, "Permission denied. Enable it in app settings.", Toast.LENGTH_LONG).show()
-            }
+        if (requestCode == STORAGE_PERMISSION_CODE &&
+            grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+        ) {
+            generatePdf(viewModel.vehicleRegistration)
         }
     }
 }
