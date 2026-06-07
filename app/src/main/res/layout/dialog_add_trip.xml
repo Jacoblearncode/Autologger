@@ -9,7 +9,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Trip Purpose / Destination"
-        android:textColor="@color/black"
+        android:textColor="@color/text_primary"
         android:textSize="14sp" />
 
     <EditText
@@ -27,7 +27,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Date"
-        android:textColor="@color/black"
+        android:textColor="@color/text_primary"
         android:textSize="14sp" />
 
     <EditText
@@ -47,7 +47,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Start Odometer (km)"
-        android:textColor="@color/black"
+        android:textColor="@color/text_primary"
         android:textSize="14sp" />
 
     <EditText
@@ -65,7 +65,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="End Odometer (km)"
-        android:textColor="@color/black"
+        android:textColor="@color/text_primary"
         android:textSize="14sp" />
 
     <EditText
@@ -83,7 +83,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Notes (optional)"
-        android:textColor="@color/black"
+        android:textColor="@color/text_primary"
         android:textSize="14sp" />
 
     <EditText

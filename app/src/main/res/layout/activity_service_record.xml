@@ -29,7 +29,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Service Records"
-            android:textColor="@color/yellow"
+            android:textColor="@color/accent_lime"
             android:textSize="20sp"
             android:textStyle="bold"
             android:gravity="center"/>
@@ -88,7 +88,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="SERVICES"
-                    android:textColor="@color/gray_500"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:letterSpacing="0.1" />
 
@@ -113,7 +113,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="FUEL"
-                    android:textColor="@color/gray_500"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:letterSpacing="0.1" />
 
@@ -138,7 +138,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="TOTAL SPENT"
-                    android:textColor="@color/gray_500"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:letterSpacing="0.1" />
 
@@ -163,7 +163,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="AVG EFFICIENCY"
-                    android:textColor="@color/gray_500"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:letterSpacing="0.1" />
 
@@ -202,7 +202,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="COST / KM"
-                    android:textColor="@color/gray_500"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:letterSpacing="0.1" />
 
@@ -227,7 +227,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="NEXT SERVICE"
-                    android:textColor="@color/gray_500"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:letterSpacing="0.1" />
 
@@ -252,7 +252,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="RECORDS"
-                    android:textColor="@color/gray_500"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:letterSpacing="0.1" />
 

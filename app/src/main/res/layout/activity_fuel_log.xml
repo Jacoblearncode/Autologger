@@ -7,7 +7,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/black"
+        android:background="@color/bg_surface"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="16dp">
@@ -18,7 +18,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="Fuel Logs"
-            android:textColor="@color/yellow"
+            android:textColor="@color/accent_lime"
             android:textSize="24sp"
             android:textStyle="bold" />
 
@@ -88,7 +88,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="No fuel logs yet"
-            android:textColor="@color/black"
+            android:textColor="@color/text_primary"
             android:textSize="20sp"
             android:textStyle="bold" />
 
@@ -99,7 +99,7 @@
             android:layout_marginTop="8dp"
             android:gravity="center"
             android:text="Tap + to log your first fill-up"
-            android:textColor="@color/gray"
+            android:textColor="@color/text_secondary"
             android:textSize="14sp" />
     </LinearLayout>
 

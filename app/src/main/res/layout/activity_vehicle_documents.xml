@@ -8,7 +8,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/black"
+        android:background="@color/bg_surface"
         android:padding="16dp"
         android:gravity="center"
         android:orientation="horizontal">
@@ -18,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Vehicle Documents"
-            android:textColor="@color/yellow"
+            android:textColor="@color/accent_lime"
             android:textSize="20sp"
             android:textStyle="bold"
             android:gravity="center" />
@@ -40,7 +40,7 @@
                 android:id="@+id/cardInsurance"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/white"
+                android:background="@color/bg_surface"
                 android:elevation="2dp"
                 android:orientation="horizontal"
                 android:padding="16dp"
@@ -56,7 +56,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="INSURANCE"
-                        android:textColor="@color/gray_500"
+                        android:textColor="@color/text_secondary"
                         android:textSize="11sp"
                         android:letterSpacing="0.1" />
 
@@ -65,7 +65,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Not set"
-                        android:textColor="@color/gray"
+                        android:textColor="@color/text_secondary"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_marginTop="2dp" />
@@ -96,7 +96,7 @@
                 android:id="@+id/cardRoadTax"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/white"
+                android:background="@color/bg_surface"
                 android:elevation="2dp"
                 android:orientation="horizontal"
                 android:padding="16dp"
@@ -112,7 +112,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="ROAD TAX"
-                        android:textColor="@color/gray_500"
+                        android:textColor="@color/text_secondary"
                         android:textSize="11sp"
                         android:letterSpacing="0.1" />
 
@@ -121,7 +121,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Not set"
-                        android:textColor="@color/gray"
+                        android:textColor="@color/text_secondary"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_marginTop="2dp" />
@@ -152,7 +152,7 @@
                 android:id="@+id/cardFitness"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/white"
+                android:background="@color/bg_surface"
                 android:elevation="2dp"
                 android:orientation="horizontal"
                 android:padding="16dp"
@@ -168,7 +168,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="FITNESS CERTIFICATE"
-                        android:textColor="@color/gray_500"
+                        android:textColor="@color/text_secondary"
                         android:textSize="11sp"
                         android:letterSpacing="0.1" />
 
@@ -177,7 +177,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Not set"
-                        android:textColor="@color/gray"
+                        android:textColor="@color/text_secondary"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_marginTop="2dp" />
@@ -207,7 +207,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Tap the edit icon on any document to set or update its expiry date."
-                android:textColor="@color/gray"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:gravity="center"
                 android:layout_marginTop="8dp" />

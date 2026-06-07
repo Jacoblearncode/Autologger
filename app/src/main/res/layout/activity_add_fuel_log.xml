@@ -7,7 +7,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/black"
+        android:background="@color/bg_surface"
         android:gravity="center"
         android:orientation="horizontal"
         android:padding="16dp">
@@ -17,7 +17,7 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="Add Fuel Log"
-            android:textColor="@color/yellow"
+            android:textColor="@color/accent_lime"
             android:textSize="24sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -26,7 +26,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="@color/white">
+        android:background="@color/bg_surface">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -38,7 +38,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Vehicle *"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <LinearLayout
@@ -59,7 +59,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Date *"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <EditText
@@ -73,15 +73,15 @@
                 android:hint="Select date"
                 android:inputType="none"
                 android:padding="12dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/gray" />
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Odometer Reading (km) *"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <EditText
@@ -93,15 +93,15 @@
                 android:hint="e.g. 45000"
                 android:inputType="numberDecimal"
                 android:padding="12dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/gray" />
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Liters Filled *"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <EditText
@@ -113,15 +113,15 @@
                 android:hint="e.g. 35.5"
                 android:inputType="numberDecimal"
                 android:padding="12dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/gray" />
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Price per Liter (Rs.)"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <EditText
@@ -133,15 +133,15 @@
                 android:hint="e.g. 320.00"
                 android:inputType="numberDecimal"
                 android:padding="12dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/gray" />
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Total Cost (Rs.)"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <EditText
@@ -153,15 +153,15 @@
                 android:hint="Auto-calculated or enter manually"
                 android:inputType="numberDecimal"
                 android:padding="12dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/gray" />
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Fuel Type"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <LinearLayout
@@ -182,7 +182,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Notes"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <EditText
@@ -196,8 +196,8 @@
                 android:inputType="textMultiLine"
                 android:minLines="3"
                 android:padding="12dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/gray" />
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary" />
 
             <Button
                 android:id="@+id/btnSave"
@@ -207,7 +207,7 @@
                 android:layout_marginBottom="16dp"
                 android:backgroundTint="@color/black"
                 android:text="Save Fuel Log"
-                android:textColor="@color/yellow" />
+                android:textColor="@color/accent_lime" />
 
         </LinearLayout>
     </ScrollView>

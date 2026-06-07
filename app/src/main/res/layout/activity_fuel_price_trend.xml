@@ -7,7 +7,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/black"
+        android:background="@color/bg_surface"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="8dp"
@@ -30,7 +30,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="Fuel Price Trend"
-            android:textColor="@color/yellow"
+            android:textColor="@color/accent_lime"
             android:textSize="20sp"
             android:textStyle="bold" />
 
@@ -65,7 +65,7 @@
         android:gravity="center"
         android:padding="24dp"
         android:text="No fuel logs with price data.\nAdd fuel logs to see the trend."
-        android:textColor="@color/gray"
+        android:textColor="@color/text_secondary"
         android:textSize="15sp"
         android:visibility="gone" />
 

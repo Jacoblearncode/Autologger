@@ -9,7 +9,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/black"
+        android:background="@color/bg_surface"
         android:padding="16dp"
         android:gravity="center"
         android:orientation="horizontal">
@@ -21,7 +21,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Add Services"
-            android:textColor="@color/yellow"
+            android:textColor="@color/accent_lime"
             android:textSize="24sp"
             android:textStyle="bold"
             android:gravity="center" />
@@ -48,7 +48,7 @@
                 android:layout_height="wrap_content"
                 android:text="Select Vehicle"
                 android:textSize="16sp"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:layout_marginTop="16dp" />
 
             <LinearLayout
@@ -69,7 +69,7 @@
                 android:layout_height="wrap_content"
                 android:text="Service Date"
                 android:textSize="16sp"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:layout_marginTop="16dp" />
 
             <EditText
@@ -90,7 +90,7 @@
                 android:layout_height="wrap_content"
                 android:text="Odometer Reading (KM)"
                 android:textSize="16sp"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:layout_marginTop="16dp" />
 
             <EditText
@@ -109,7 +109,7 @@
                 android:layout_height="wrap_content"
                 android:text="Service Type"
                 android:textSize="16sp"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:layout_marginTop="16dp" />
 
             <LinearLayout
@@ -130,7 +130,7 @@
                 android:layout_height="wrap_content"
                 android:text="Services Checklist"
                 android:textSize="16sp"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:layout_marginTop="16dp" />
 
             <LinearLayout
@@ -263,7 +263,7 @@
                 android:layout_height="wrap_content"
                 android:text="Service Cost (Rs.)"
                 android:textSize="16sp"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:layout_marginTop="16dp" />
 
             <EditText
@@ -282,7 +282,7 @@
                 android:layout_height="wrap_content"
                 android:text="Additional Notes"
                 android:textSize="16sp"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:layout_marginTop="16dp" />
 
             <EditText
@@ -301,7 +301,7 @@
                 android:layout_height="wrap_content"
                 android:text="Upload Bills"
                 android:textSize="16sp"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:layout_marginTop="16dp" />
 
             <!-- Buttons for Uploading Photos -->
@@ -320,7 +320,7 @@
                     android:layout_weight="1"
                     android:text="Gallery"
                     android:backgroundTint="@color/black"
-                    android:textColor="@color/yellow"
+                    android:textColor="@color/accent_lime"
                     android:layout_marginEnd="8dp" />
 
                 <!-- Button to Open Camera -->
@@ -331,7 +331,7 @@
                     android:layout_weight="1"
                     android:text="Camera"
                     android:backgroundTint="@color/black"
-                    android:textColor="@color/yellow" />
+                    android:textColor="@color/accent_lime" />
             </LinearLayout>
 
             <!-- RecyclerView to Display Uploaded Photos -->
@@ -340,7 +340,7 @@
                 android:layout_height="wrap_content"
                 android:text="Uploaded Photos"
                 android:textSize="16sp"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:layout_marginTop="16dp" />
 
             <androidx.recyclerview.widget.RecyclerView
@@ -358,7 +358,7 @@
                 android:layout_height="wrap_content"
                 android:text="Save Service"
                 android:backgroundTint="@color/black"
-                android:textColor="@color/yellow"
+                android:textColor="@color/accent_lime"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp"/>
         </LinearLayout>
