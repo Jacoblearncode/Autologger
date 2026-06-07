@@ -18,16 +18,13 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.Query
-import com.google.firebase.database.ValueEventListener
 import com.nibm.autocare.Authentication.LoginActivity
+import com.nibm.autocare.Home.VehicleViewModel
+import com.nibm.autocare.Home.VehicleViewModelFactory
 import com.nibm.autocare.Vehicle.AddVehicleActivity
 import com.nibm.autocare.adapter.VehicleAdapter
 import com.nibm.autocare.model.Vehicle
@@ -38,27 +35,28 @@ class HomeActivity : AppCompatActivity() {
         private const val REQUEST_NOTIFICATION_PERMISSION = 2001
     }
 
-    private val allVehicles = mutableListOf<Vehicle>()
+    private lateinit var viewModel: VehicleViewModel
     private lateinit var tvGreeting: TextView
     private lateinit var rvVehicles: RecyclerView
     private lateinit var vehicleAdapter: VehicleAdapter
-    private lateinit var auth: FirebaseAuth
-    private lateinit var database: FirebaseDatabase
     private lateinit var etSearch: EditText
     private lateinit var emptyState: View
     private lateinit var tvEmptyTitle: TextView
     private lateinit var tvEmptySubtitle: TextView
-    private var isSearchActive = false
-
-    private var vehiclesListener: ValueEventListener? = null
-    private var vehiclesDbRef: DatabaseReference? = null
+    private var searchQuery = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        auth = FirebaseAuth.getInstance()
-        database = FirebaseDatabase.getInstance()
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId == null) {
+            startActivity(Intent(this, LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+            finish()
+            return
+        }
 
         tvGreeting = findViewById(R.id.tvGreeting)
         etSearch = findViewById(R.id.etSearch)
@@ -68,7 +66,11 @@ class HomeActivity : AppCompatActivity() {
 
         setupRecyclerView()
         setupSearch()
-        fetchUsername()
+
+        viewModel = ViewModelProvider(this, VehicleViewModelFactory(userId))[VehicleViewModel::class.java]
+        observeViewModel()
+
+        requestNotificationPermissionIfNeeded()
 
         findViewById<View>(R.id.ivMenu).setOnClickListener { showMenu(it) }
         findViewById<View>(R.id.llAddVehicle).setOnClickListener {
@@ -82,33 +84,18 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        if (auth.currentUser != null) {
-            attachVehiclesListener()
-            requestNotificationPermissionIfNeeded()
-        }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        vehiclesListener?.let { vehiclesDbRef?.removeEventListener(it) }
-        vehiclesListener = null
-    }
-
     private fun setupRecyclerView() {
         rvVehicles = findViewById(R.id.rvVehicles)
         rvVehicles.layoutManager = LinearLayoutManager(this)
-
         vehicleAdapter = VehicleAdapter(
             onItemClick = { vehicle ->
                 startActivity(Intent(this, ServiceRecordActivity::class.java).apply {
                     putExtra("vehicleRegistration", vehicle.registrationNumber)
                 })
             },
-            onItemLongClick = { vehicle -> showDeleteConfirmationDialog(vehicle) },
+            onItemLongClick = { vehicle -> confirmDelete(vehicle) },
             onEditClick = { vehicle ->
-                getVehicleId(vehicle.registrationNumber) { vehicleId ->
+                viewModel.findVehicleIdForEdit(vehicle.registrationNumber) { vehicleId ->
                     if (vehicleId != null) {
                         startActivity(Intent(this, AddVehicleActivity::class.java).apply {
                             putExtra("vehicleId", vehicleId)
@@ -128,14 +115,69 @@ class HomeActivity : AppCompatActivity() {
         rvVehicles.adapter = vehicleAdapter
     }
 
-    private fun updateEmptyState(list: List<Vehicle>) {
+    private fun observeViewModel() {
+        viewModel.username.observe(this) { greeting ->
+            tvGreeting.text = greeting
+        }
+
+        viewModel.vehicles.observe(this) { allVehicles ->
+            val filtered = if (searchQuery.isEmpty()) allVehicles
+            else allVehicles.filter { it.registrationNumber.lowercase().contains(searchQuery) }
+            vehicleAdapter.submitList(filtered)
+            updateEmptyState(filtered, searchQuery.isNotEmpty())
+        }
+
+        viewModel.toastMessage.observe(this) { message ->
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                viewModel.clearToast()
+            }
+        }
+    }
+
+    private fun updateEmptyState(list: List<Vehicle>, isSearching: Boolean) {
         if (list.isEmpty()) {
             rvVehicles.visibility = View.GONE
             emptyState.visibility = View.VISIBLE
+            if (isSearching) {
+                tvEmptyTitle.text = "No results found"
+                tvEmptySubtitle.text = "Try a different search term"
+            } else {
+                tvEmptyTitle.text = "No vehicles yet"
+                tvEmptySubtitle.text = "Tap the Vehicles button below to add your first vehicle"
+            }
         } else {
             rvVehicles.visibility = View.VISIBLE
             emptyState.visibility = View.GONE
         }
+    }
+
+    private fun setupSearch() {
+        etSearch.setOnEditorActionListener { _, actionId, _ ->
+            actionId == EditorInfo.IME_ACTION_SEARCH
+        }
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                searchQuery = s?.toString()?.trim()?.lowercase() ?: ""
+                // Re-filter current list through the observer
+                val current = viewModel.vehicles.value ?: emptyList()
+                val filtered = if (searchQuery.isEmpty()) current
+                else current.filter { it.registrationNumber.lowercase().contains(searchQuery) }
+                vehicleAdapter.submitList(filtered)
+                updateEmptyState(filtered, searchQuery.isNotEmpty())
+            }
+        })
+    }
+
+    private fun confirmDelete(vehicle: Vehicle) {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Vehicle")
+            .setMessage("Delete ${vehicle.registrationNumber} and all its service records?")
+            .setPositiveButton("Delete") { _, _ -> viewModel.deleteVehicle(vehicle) }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -152,174 +194,6 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSearch() {
-        etSearch.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                performSearch()
-                true
-            } else false
-        }
-
-        etSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                if (s.isNullOrEmpty()) {
-                    if (isSearchActive) {
-                        isSearchActive = false
-                        tvEmptyTitle.text = "No vehicles yet"
-                        tvEmptySubtitle.text = "Tap the Vehicles button below to add your first vehicle"
-                        vehicleAdapter.submitList(allVehicles.toList())
-                        updateEmptyState(allVehicles)
-                    }
-                } else {
-                    performSearch()
-                }
-            }
-        })
-    }
-
-    private fun performSearch() {
-        val query = etSearch.text.toString().trim().lowercase()
-        if (query.isEmpty()) return
-        isSearchActive = true
-        val filtered = allVehicles.filter { it.registrationNumber.lowercase().contains(query) }
-        vehicleAdapter.submitList(filtered)
-        updateEmptyState(filtered)
-        if (filtered.isEmpty()) {
-            tvEmptyTitle.text = "No results found"
-            tvEmptySubtitle.text = "Try a different search term"
-        }
-    }
-
-    private fun showDeleteConfirmationDialog(vehicle: Vehicle) {
-        AlertDialog.Builder(this)
-            .setTitle("Delete Vehicle")
-            .setMessage("Delete ${vehicle.registrationNumber} and all its service records?")
-            .setPositiveButton("Delete") { _, _ -> deleteVehicle(vehicle) }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun deleteVehicle(vehicle: Vehicle) {
-        val currentUser = auth.currentUser ?: run {
-            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val userId = currentUser.uid
-        val query: Query = database.reference.child("users_vehicles").child(userId)
-            .orderByChild("registrationNumber").equalTo(vehicle.registrationNumber)
-
-        query.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (!snapshot.exists()) {
-                    Toast.makeText(this@HomeActivity, "Vehicle not found", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                for (vehicleSnapshot in snapshot.children) {
-                    val vehicleId = vehicleSnapshot.key ?: continue
-                    deleteVehicleAndServices(userId, vehicleId, vehicle.registrationNumber)
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@HomeActivity, "Failed to find vehicle: ${error.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    private fun deleteVehicleAndServices(userId: String, vehicleId: String, registrationNumber: String) {
-        val vehicleRef = database.reference.child("users_vehicles").child(userId).child(vehicleId)
-        val servicesRef = database.reference.child("users_services").child(userId).child(registrationNumber)
-
-        servicesRef.removeValue().addOnSuccessListener {
-            vehicleRef.removeValue().addOnSuccessListener {
-                Toast.makeText(this, "Vehicle and all service records deleted", Toast.LENGTH_SHORT).show()
-            }.addOnFailureListener { e ->
-                Toast.makeText(this, "Error deleting vehicle: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }.addOnFailureListener { e ->
-            Toast.makeText(this, "Failed to delete service records: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun fetchUsername() {
-        val currentUser = auth.currentUser ?: return
-        database.reference.child("users").child(currentUser.uid)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val username = snapshot.child("username").getValue(String::class.java)
-                    tvGreeting.text = if (username != null) "Hello, $username!" else "Hello, User"
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    Toast.makeText(this@HomeActivity, "Failed to fetch username", Toast.LENGTH_SHORT).show()
-                }
-            })
-    }
-
-    private fun attachVehiclesListener() {
-        val currentUser = auth.currentUser ?: return
-        val userId = currentUser.uid
-
-        vehiclesDbRef = database.reference.child("users_vehicles").child(userId)
-        vehiclesListener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                allVehicles.clear()
-                for (vehicleSnapshot in snapshot.children) {
-                    val registrationNumber = vehicleSnapshot.child("registrationNumber").getValue(String::class.java)
-                    val brand = vehicleSnapshot.child("brand").getValue(String::class.java)
-                    val manufacturedYear = vehicleSnapshot.child("manufacturedYear").getValue(String::class.java)
-                    val model = vehicleSnapshot.child("model").getValue(String::class.java)
-
-                    if (registrationNumber != null && brand != null && manufacturedYear != null && model != null) {
-                        allVehicles.add(Vehicle(
-                            registrationNumber,
-                            brand,
-                            manufacturedYear,
-                            model,
-                            vehicleSnapshot.child("currentMileage").getValue(Int::class.java) ?: 0,
-                            vehicleSnapshot.child("weeklyRidingDistance").getValue(Int::class.java) ?: 0,
-                            vehicleSnapshot.child("photoUrl").getValue(String::class.java) ?: "",
-                            vehicleSnapshot.child("defaultImageUrl").getValue(String::class.java) ?: ""
-                        ))
-                    }
-                }
-
-                if (isSearchActive) {
-                    performSearch()
-                } else {
-                    vehicleAdapter.submitList(allVehicles.toList())
-                    updateEmptyState(allVehicles)
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@HomeActivity, "Failed to fetch vehicles: ${error.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-        vehiclesDbRef?.addValueEventListener(vehiclesListener!!)
-    }
-
-    private fun getVehicleId(registrationNumber: String, callback: (String?) -> Unit) {
-        val currentUser = auth.currentUser ?: run { callback(null); return }
-        database.reference.child("users_vehicles").child(currentUser.uid)
-            .orderByChild("registrationNumber").equalTo(registrationNumber)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        for (vehicleSnapshot in snapshot.children) {
-                            callback(vehicleSnapshot.key)
-                            return
-                        }
-                    }
-                    callback(null)
-                }
-
-                override fun onCancelled(error: DatabaseError) { callback(null) }
-            })
-    }
-
     private fun showMenu(view: View) {
         val popupMenu = PopupMenu(this, view)
         popupMenu.inflate(R.menu.menu_home)
@@ -334,7 +208,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun logout() {
-        auth.signOut()
+        FirebaseAuth.getInstance().signOut()
         Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
         startActivity(Intent(this, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -343,30 +217,26 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun deleteAccount() {
-        val currentUser = auth.currentUser ?: run {
-            Toast.makeText(this, "No user is currently logged in", Toast.LENGTH_SHORT).show()
+        val currentUser = FirebaseAuth.getInstance().currentUser ?: run {
+            Toast.makeText(this, "No user logged in", Toast.LENGTH_SHORT).show()
             return
         }
-        val userId = currentUser.uid
-        val pathsToDelete = mapOf(
-            "users" to database.reference.child("users").child(userId),
-            "users_services" to database.reference.child("users_services").child(userId),
-            "users_vehicles" to database.reference.child("users_vehicles").child(userId)
+        val db = com.google.firebase.database.FirebaseDatabase.getInstance()
+        val uid = currentUser.uid
+        val deleteTasks = listOf(
+            db.reference.child("users").child(uid).removeValue(),
+            db.reference.child("users_services").child(uid).removeValue(),
+            db.reference.child("users_vehicles").child(uid).removeValue()
         )
-        val deleteTasks = pathsToDelete.map { (_, ref) -> ref.removeValue() }
         com.google.android.gms.tasks.Tasks.whenAll(deleteTasks)
             .addOnSuccessListener {
-                currentUser.delete()
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "Account deleted successfully", Toast.LENGTH_SHORT).show()
-                        logout()
-                    }
-                    .addOnFailureListener { e ->
-                        Toast.makeText(this, "Data deleted but auth removal failed: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
+                currentUser.delete().addOnSuccessListener {
+                    Toast.makeText(this, "Account deleted", Toast.LENGTH_SHORT).show()
+                    logout()
+                }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to delete user data: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Failed to delete account: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 }
