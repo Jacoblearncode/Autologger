@@ -3,16 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="16dp"
-    android:background="@color/yellow">
+    android:padding="14dp"
+    android:background="@drawable/vehicle_card_background">
 
     <!-- Vehicle Photo -->
     <ImageView
         android:id="@+id/ivVehiclePhoto"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
         android:layout_gravity="center_vertical"
-        android:layout_marginEnd="8dp"
+        android:layout_marginEnd="12dp"
         android:background="@drawable/circle_gray_bg"
         android:scaleType="centerCrop"
         android:clipToOutline="true"
@@ -24,26 +24,25 @@
         android:layout_height="match_parent"
         android:layout_weight="2"
         android:orientation="vertical"
-        android:gravity="start">
+        android:gravity="center_vertical">
 
         <TextView
             android:id="@+id/tvRegistrationNumber"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="KN 2234"
-            android:textSize="18sp"
-            android:textColor="@color/black"
+            android:textSize="16sp"
+            android:textColor="@color/accent_lime"
             android:textStyle="bold"
-            android:padding="8dp" />
+            android:paddingBottom="4dp" />
 
         <TextView
             android:id="@+id/tvManufacturedYear"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="2010"
-            android:textSize="18sp"
-            android:textColor="@color/black"
-            android:padding="8dp" />
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
     </LinearLayout>
 
     <!-- Middle Column - Brand and Model -->
@@ -59,21 +58,20 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Toyota"
-            android:textSize="18sp"
-            android:textColor="@color/black"
+            android:textSize="14sp"
+            android:textColor="@color/text_primary"
             android:textStyle="bold"
             android:gravity="center"
-            android:padding="8dp" />
+            android:paddingBottom="4dp" />
 
         <TextView
             android:id="@+id/tvModel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Allion"
-            android:textSize="18sp"
-            android:textColor="@color/black"
-            android:gravity="center"
-            android:padding="8dp" />
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center" />
     </LinearLayout>
 
     <!-- Right Column - Edit Button -->
@@ -85,10 +83,11 @@
 
         <ImageButton
             android:id="@+id/btnEdit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:src="@drawable/ic_edit"
+            android:tint="@color/text_secondary"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="8dp" />
+            android:padding="6dp" />
     </LinearLayout>
 </LinearLayout>

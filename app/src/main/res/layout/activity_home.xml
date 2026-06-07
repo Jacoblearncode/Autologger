@@ -2,68 +2,79 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/bg_primary"
     android:orientation="vertical">
 
-  <!-- Header with App Name and Menu Icon -->
+  <!-- Header: App name + greeting + menu -->
   <LinearLayout
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:background="@color/black"
-      android:padding="16dp"
-      android:gravity="center"
-      android:orientation="horizontal">
+      android:background="@color/bg_surface"
+      android:paddingStart="20dp"
+      android:paddingEnd="12dp"
+      android:paddingTop="16dp"
+      android:paddingBottom="16dp"
+      android:gravity="center_vertical"
+      android:orientation="horizontal"
+      android:elevation="4dp">
 
-    <!-- App Name -->
-    <TextView
-        android:id="@+id/tvAppName"
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="AutoCare"
-        android:textColor="@color/yellow"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center" />
+        android:orientation="vertical">
 
-    <!-- Menu Icon (3 lines) -->
+      <TextView
+          android:id="@+id/tvAppName"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="AutoCare"
+          android:textColor="@color/accent_lime"
+          android:textSize="22sp"
+          android:textStyle="bold"
+          android:letterSpacing="0.02" />
+
+      <TextView
+          android:id="@+id/tvGreeting"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="Hello, User"
+          android:textSize="13sp"
+          android:textColor="@color/text_secondary"
+          android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
     <ImageView
         android:id="@+id/ivMenu"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:src="@drawable/baseline_menu_24"
-        android:contentDescription="Menu icon"
+        android:tint="@color/text_secondary"
+        android:contentDescription="Menu"
         android:padding="8dp" />
+
   </LinearLayout>
 
-  <!-- Greeting with Username -->
-  <TextView
-      android:id="@+id/tvGreeting"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:text="Hello, [Username]"
-      android:textSize="15sp"
-      android:layout_marginTop="16dp"
-      android:gravity="center"
-      android:textColor="@color/black" />
-
+  <!-- Search bar -->
   <LinearLayout
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:layout_marginStart="16dp"
       android:layout_marginEnd="16dp"
-      android:layout_marginTop="8dp"
+      android:layout_marginTop="16dp"
       android:background="@drawable/search_bar_background"
       android:orientation="horizontal"
-      android:padding="8dp">
+      android:padding="4dp">
 
     <ImageView
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginTop="8dp"
-    android:src="@drawable/ic_search"
-    android:tint="@color/gray" />
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="6dp"
+        android:layout_gravity="center_vertical"
+        android:src="@drawable/ic_search"
+        android:tint="@color/text_secondary" />
 
     <EditText
         android:id="@+id/etSearch"
@@ -74,13 +85,14 @@
         android:imeOptions="actionSearch"
         android:inputType="text"
         android:maxLines="1"
-        android:padding="8dp"
-        android:textColor="@color/black"
-        android:textColorHint="@color/gray" />
+        android:padding="10dp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_secondary"
+        android:textSize="14sp" />
+
   </LinearLayout>
 
-
-  <!-- Empty state — shown automatically by ListView when adapter has 0 items -->
+  <!-- Empty state -->
   <LinearLayout
       android:id="@+id/emptyStateVehicles"
       android:layout_width="match_parent"
@@ -95,7 +107,8 @@
           android:layout_width="80dp"
           android:layout_height="80dp"
           android:src="@drawable/ic_empty_vehicle"
-          android:alpha="0.25"
+          android:alpha="0.3"
+          android:tint="@color/accent_lime"
           android:contentDescription="No vehicles" />
 
       <TextView
@@ -105,32 +118,32 @@
           android:text="No vehicles yet"
           android:textSize="20sp"
           android:textStyle="bold"
-          android:textColor="@color/black"
+          android:textColor="@color/text_primary"
           android:layout_marginTop="16dp" />
 
       <TextView
           android:id="@+id/tvEmptySubtitle"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
-          android:text="Tap the Vehicles button below to add your first vehicle"
+          android:text="Tap the Vehicle button below to add your first vehicle"
           android:textSize="14sp"
-          android:textColor="@color/gray"
+          android:textColor="@color/text_secondary"
           android:gravity="center"
           android:layout_marginTop="8dp" />
 
   </LinearLayout>
 
-  <!-- List to Display Vehicle Data -->
+  <!-- Vehicle list -->
   <ListView
       android:id="@+id/lvEmails"
       android:layout_width="match_parent"
       android:layout_height="0dp"
       android:layout_weight="1"
-      android:layout_marginTop="16dp"
-      android:divider="@color/background_color"
-      android:dividerHeight="5dp"
-      android:background="@color/background_color"
-      android:padding="16dp" />
+      android:layout_marginTop="8dp"
+      android:divider="@color/bg_primary"
+      android:dividerHeight="10dp"
+      android:background="@color/bg_primary"
+      android:padding="12dp" />
 
   <include
       layout="@layout/footer"

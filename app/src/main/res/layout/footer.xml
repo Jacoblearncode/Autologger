@@ -2,9 +2,12 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:background="@color/black"
-    android:padding="8dp"
-    android:layout_marginTop="8dp">
+    android:background="@color/bg_surface"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
+    android:elevation="8dp">
 
     <LinearLayout
         android:id="@+id/llAddService"
@@ -16,17 +19,18 @@
         android:padding="4dp">
 
         <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
             android:src="@drawable/baseline_car_repair_24"
+            android:tint="@color/accent_lime"
             android:contentDescription="Add Service icon" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Service"
-            android:textColor="@color/yellow"
-            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
             android:layout_marginTop="4dp" />
     </LinearLayout>
 
@@ -40,17 +44,18 @@
         android:padding="4dp">
 
         <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
             android:src="@drawable/baseline_home_24"
+            android:tint="@color/accent_lime"
             android:contentDescription="Home icon" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Dashboard"
-            android:textColor="@color/yellow"
-            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
             android:layout_marginTop="4dp" />
     </LinearLayout>
 
@@ -64,17 +69,18 @@
         android:padding="4dp">
 
         <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
             android:src="@drawable/baseline_directions_car_24"
+            android:tint="@color/accent_lime"
             android:contentDescription="Add Vehicle icon" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Vehicle"
-            android:textColor="@color/yellow"
-            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
             android:layout_marginTop="4dp" />
     </LinearLayout>
 
@@ -88,17 +94,18 @@
         android:padding="4dp">
 
         <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
             android:src="@drawable/ic_fuel_log"
+            android:tint="@color/accent_lime"
             android:contentDescription="Fuel log icon" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Fuel"
-            android:textColor="@color/yellow"
-            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
             android:layout_marginTop="4dp" />
     </LinearLayout>
 </LinearLayout>
