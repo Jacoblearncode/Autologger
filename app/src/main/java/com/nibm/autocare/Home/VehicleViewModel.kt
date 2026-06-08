@@ -15,22 +15,34 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
+/**
+ * ViewModel for the Home screen, following the MVVM architecture pattern.
+ *
+ * Owns a persistent Firebase ValueEventListener so the vehicle list updates in
+ * real time without the Activity managing database connections directly.
+ * The listener is attached when the ViewModel is first created and removed in
+ * onCleared() to prevent memory leaks when the Activity is destroyed.
+ */
 class VehicleViewModel(private val userId: String) : ViewModel() {
 
     private val database = FirebaseDatabase.getInstance()
 
+    // Private mutable backing field; public read-only LiveData exposed to the UI.
+    // This pattern prevents the UI from pushing data directly into the ViewModel.
     private val _vehicles = MutableLiveData<List<Vehicle>>(emptyList())
     val vehicles: LiveData<List<Vehicle>> = _vehicles
 
     private val _username = MutableLiveData<String>()
     val username: LiveData<String> = _username
 
+    // Single-use toast channel: UI observes, displays, then calls clearToast() to reset.
     private val _toastMessage = MutableLiveData<String?>()
     val toastMessage: LiveData<String?> = _toastMessage
 
     private val vehiclesRef: DatabaseReference =
         database.reference.child("users_vehicles").child(userId)
 
+    // Continuous listener — receives updates whenever any vehicle is added/edited/deleted.
     private val vehiclesListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
             val list = mutableListOf<Vehicle>()
@@ -40,6 +52,7 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
                 val manufacturedYear = vehicleSnapshot.child("manufacturedYear").getValue(String::class.java)
                 val model = vehicleSnapshot.child("model").getValue(String::class.java)
 
+                // Skip incomplete records rather than crashing with a NullPointerException
                 if (registrationNumber != null && brand != null && manufacturedYear != null && model != null) {
                     list.add(Vehicle(
                         registrationNumber,
@@ -62,10 +75,13 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
     }
 
     init {
+        // Attach the real-time listener as soon as the ViewModel is created.
+        // It stays active for the ViewModel's entire lifetime, not tied to any Activity.
         vehiclesRef.addValueEventListener(vehiclesListener)
         fetchUsername()
     }
 
+    // One-shot read; username rarely changes so a persistent listener would be wasteful.
     private fun fetchUsername() {
         database.reference.child("users").child(userId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
@@ -82,8 +98,8 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
 
     /**
      * Deletes a vehicle and its associated service records.
-     * Uses viewModelScope + coroutines so the two-step delete runs
-     * sequentially without nested callbacks.
+     * Uses viewModelScope + coroutines so the two-step delete (service records first,
+     * then the vehicle node) runs sequentially without nested callbacks.
      */
     fun deleteVehicle(vehicle: Vehicle) {
         viewModelScope.launch {
@@ -100,6 +116,11 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
         }
     }
 
+    /**
+     * Bridges Firebase's callback-based query into a suspendable coroutine.
+     * suspendCancellableCoroutine pauses execution here until Firebase responds,
+     * then resumes the coroutine with the node key (or null if not found).
+     */
     private suspend fun findVehicleId(registrationNumber: String): String? =
         suspendCancellableCoroutine { cont ->
             database.reference.child("users_vehicles").child(userId)
@@ -115,6 +136,7 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
                 })
         }
 
+    // Wraps the suspend query so the Activity can call it without launching a coroutine itself.
     fun findVehicleIdForEdit(registrationNumber: String, callback: (String?) -> Unit) {
         viewModelScope.launch {
             callback(findVehicleId(registrationNumber))
@@ -127,10 +149,16 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
+        // Remove the Firebase listener here to prevent callbacks arriving after the VM is gone.
         vehiclesRef.removeEventListener(vehiclesListener)
     }
 }
 
+/**
+ * Factory required because VehicleViewModel takes a constructor parameter (userId).
+ * The default ViewModelProvider.Factory can only create no-arg ViewModels,
+ * so this factory is passed to ViewModelProvider to inject the userId at creation time.
+ */
 class VehicleViewModelFactory(private val userId: String) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

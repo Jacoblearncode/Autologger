@@ -12,6 +12,14 @@ import com.bumptech.glide.Glide
 import com.nibm.autocare.R
 import com.nibm.autocare.model.Vehicle
 
+/**
+ * RecyclerView adapter for the vehicle list on the Home screen.
+ *
+ * Uses lambda callbacks instead of a listener interface so the Activity can
+ * pass inline handlers without creating a separate interface implementation.
+ * Interaction types: tap → open service records, long-press → confirm delete,
+ * edit button → open vehicle edit form.
+ */
 class VehicleAdapter(
     private val onItemClick: (Vehicle) -> Unit,
     private val onItemLongClick: (Vehicle) -> Unit,
@@ -20,6 +28,11 @@ class VehicleAdapter(
 
     private val items = mutableListOf<Vehicle>()
 
+    /**
+     * Replaces the current list and refreshes the RecyclerView.
+     * Called both when LiveData delivers a full update and when the search bar
+     * filters the list locally (no Firebase round-trip needed for search).
+     */
     fun submitList(newList: List<Vehicle>) {
         items.clear()
         items.addAll(newList)
@@ -52,6 +65,7 @@ class VehicleAdapter(
             tvManufacturedYear.text = vehicle.manufacturedYear
             tvModel.text = vehicle.model
 
+            // Photo priority: user-uploaded (Cloudinary) > Wikipedia default > grey placeholder.
             when {
                 vehicle.photoUrl.isNotEmpty() -> {
                     Glide.with(itemView.context)

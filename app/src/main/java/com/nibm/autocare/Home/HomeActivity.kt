@@ -30,6 +30,13 @@ import com.nibm.autocare.adapter.VehicleAdapter
 import com.nibm.autocare.model.Vehicle
 import com.nibm.autocare.ServiceRecord.ServiceRecordActivity
 
+/**
+ * Main screen of the app, displaying the user's vehicle list.
+ *
+ * Follows MVVM: VehicleViewModel owns all Firebase data and business logic;
+ * HomeActivity only binds UI views to LiveData and forwards user actions to the ViewModel.
+ * Search filters the already-loaded list locally — no Firebase call on every keystroke.
+ */
 class HomeActivity : AppCompatActivity() {
 
     companion object {

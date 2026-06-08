@@ -12,6 +12,13 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.nibm.autocare.model.ServiceRecord
 
+/**
+ * ViewModel for the Service Records screen, shared between ServicesFragment (Tab 1)
+ * and StatsFragment (Tab 2) via the parent Activity's ViewModelStore.
+ *
+ * Maintains two independent data sources — service records (real-time) and fuel logs
+ * (one-shot) — and combines them into a single CombinedStats value using MediatorLiveData.
+ */
 class ServiceViewModel(
     private val userId: String,
     val vehicleRegistration: String
@@ -19,6 +26,7 @@ class ServiceViewModel(
 
     private val database = FirebaseDatabase.getInstance()
 
+    // Private mutable / public immutable LiveData pattern keeps data flow unidirectional.
     private val _serviceRecords = MutableLiveData<List<ServiceRecord>>(emptyList())
     val serviceRecords: LiveData<List<ServiceRecord>> = _serviceRecords
 
@@ -26,8 +34,9 @@ class ServiceViewModel(
     val fuelData: LiveData<FuelData> = _fuelData
 
     /**
-     * MediatorLiveData that recomputes combined spend whenever either
-     * service records or fuel data updates — demonstrates advanced LiveData usage.
+     * MediatorLiveData that recomputes combined spend and efficiency metrics whenever
+     * either service records or fuel data changes. Both sources are observed internally
+     * so observers of combinedStats don't need to watch two separate streams.
      */
     val combinedStats: LiveData<CombinedStats> = MediatorLiveData<CombinedStats>().apply {
         fun recompute() {
@@ -39,13 +48,15 @@ class ServiceViewModel(
         addSource(_fuelData) { recompute() }
     }
 
+    // Raw fuel data extracted from Firebase, used only by computeStats.
     data class FuelData(
         val totalCost: Double = 0.0,
         val maxOdometer: Double = 0.0,
         val minOdometer: Double = Double.MAX_VALUE,
-        val efficiencyLogs: List<Pair<Double, Double>> = emptyList()
+        val efficiencyLogs: List<Pair<Double, Double>> = emptyList()  // (odometer, liters) pairs
     )
 
+    // Derived stats surfaced in StatsFragment. -1 for nextServiceKm means no data yet.
     data class CombinedStats(
         val svcTotal: Double = 0.0,
         val fuelTotal: Double = 0.0,
@@ -60,12 +71,14 @@ class ServiceViewModel(
     private val servicesRef: DatabaseReference =
         database.reference.child("users_services").child(userId).child(vehicleRegistration)
 
+    // Real-time listener — the list updates immediately when any record is added/deleted.
     private val servicesListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
             val list = mutableListOf<ServiceRecord>()
             for (serviceSnapshot in snapshot.children) {
                 parseServiceRecord(serviceSnapshot)?.let { list.add(it) }
             }
+            // Newest records first so the timeline shows most-recent at the top.
             list.sortByDescending { it.date }
             _serviceRecords.value = list
         }
@@ -78,6 +91,7 @@ class ServiceViewModel(
         fetchFuelData()
     }
 
+    // One-shot read; fuel data is only needed for the summary card, not for real-time display.
     private fun fetchFuelData() {
         database.reference.child("users_fuel_logs").child(userId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
@@ -88,6 +102,7 @@ class ServiceViewModel(
                     val logs = mutableListOf<Pair<Double, Double>>()
 
                     for (child in snapshot.children) {
+                        // Fuel logs are stored globally per user, so filter by this vehicle.
                         val reg = child.child("registrationNumber").getValue(String::class.java) ?: continue
                         if (reg != vehicleRegistration) continue
 
@@ -113,6 +128,7 @@ class ServiceViewModel(
         servicesRef.child(recordId).removeValue()
     }
 
+    // Returns null for malformed records rather than crashing the whole list load.
     private fun parseServiceRecord(snapshot: DataSnapshot): ServiceRecord? {
         return try {
             val date = snapshot.child("date").getValue(String::class.java) ?: return null
@@ -129,6 +145,13 @@ class ServiceViewModel(
         }
     }
 
+    /**
+     * Computes all summary statistics from the combined service and fuel datasets.
+     *
+     * Efficiency is calculated as km/L by comparing consecutive odometer readings —
+     * a minimum of two fuel log entries is required for a meaningful result.
+     * Next-service threshold is fixed at 5 000 km above the last recorded service odometer.
+     */
     private fun computeStats(records: List<ServiceRecord>, fuel: FuelData): CombinedStats {
         val svcTotal = records.sumOf { it.serviceCost.toDoubleOrNull() ?: 0.0 }
         val recordCount = records.size
@@ -137,6 +160,7 @@ class ServiceViewModel(
         val lastServiceOdo = if (odoValues.isNotEmpty()) odoValues.max() else 0.0
         val minSvcOdo = if (odoValues.isNotEmpty()) odoValues.min() else Double.MAX_VALUE
 
+        // Use the earliest odometer value across both data sources as the start of the range.
         val minAllOdo = minOf(
             if (fuel.minOdometer == Double.MAX_VALUE) Double.MAX_VALUE else fuel.minOdometer,
             if (minSvcOdo == Double.MAX_VALUE) Double.MAX_VALUE else minSvcOdo
@@ -171,10 +195,16 @@ class ServiceViewModel(
 
     override fun onCleared() {
         super.onCleared()
+        // Remove Firebase listener to stop callbacks after the ViewModel is destroyed.
         servicesRef.removeEventListener(servicesListener)
     }
 }
 
+/**
+ * Factory that passes userId and vehicleRegistration into ServiceViewModel.
+ * Only the Activity calls this; child Fragments retrieve the existing instance
+ * via ViewModelProvider(requireActivity()) without needing the factory again.
+ */
 class ServiceViewModelFactory(
     private val userId: String,
     private val vehicleRegistration: String

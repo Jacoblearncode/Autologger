@@ -29,7 +29,8 @@ class ServicesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Retrieve the ViewModel already created by the host Activity
+        // Retrieve the ViewModel already created by the host Activity.
+        // No factory is needed here because the instance already exists in the Activity's store.
         viewModel = ViewModelProvider(requireActivity())[ServiceViewModel::class.java]
 
         val rv = view.findViewById<RecyclerView>(R.id.rvServiceRecords)
@@ -40,8 +41,12 @@ class ServicesFragment : Fragment() {
         )
         rv.adapter = serviceAdapter
 
+        // viewLifecycleOwner is used instead of 'this' (the Fragment) so the observer
+        // is automatically removed when the Fragment's view is destroyed during tab switches,
+        // preventing memory leaks and stale callbacks.
         viewModel.serviceRecords.observe(viewLifecycleOwner) { records ->
             serviceAdapter.submitList(records)
+            // RecyclerView has no built-in empty state, so visibility is toggled manually.
             val empty = records.isEmpty()
             rv.visibility = if (empty) View.GONE else View.VISIBLE
             view.findViewById<View>(R.id.emptyStateServices).visibility =

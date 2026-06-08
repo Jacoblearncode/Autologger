@@ -15,13 +15,29 @@ import com.bumptech.glide.Glide
 import com.nibm.autocare.R
 import com.nibm.autocare.model.ServiceRecord
 
+/**
+ * RecyclerView adapter for the service record timeline (Tab 1).
+ *
+ * Each row can be expanded to reveal full details (service type, checked items,
+ * notes, and photos). Expand state is tracked per-position in expandedPositions
+ * so multiple rows can be open simultaneously and state survives scrolling.
+ *
+ * notifyItemChanged(position) is used for expand/collapse to redraw only the
+ * tapped row, avoiding the full-list flash that notifyDataSetChanged() causes.
+ */
 class ServiceRecordAdapter(
     private val onDeleteClick: (String) -> Unit
 ) : RecyclerView.Adapter<ServiceRecordAdapter.ServiceViewHolder>() {
 
     private val items = mutableListOf<ServiceRecord>()
+
+    // Tracks which positions are currently expanded. Stored as a Set for O(1) lookup.
     private val expandedPositions = mutableSetOf<Int>()
 
+    /**
+     * Replaces the dataset. Clears expanded state so stale rows don't stay
+     * open when the list is refreshed after a delete.
+     */
     fun submitList(newList: List<ServiceRecord>) {
         items.clear()
         items.addAll(newList)
@@ -59,6 +75,7 @@ class ServiceRecordAdapter(
             tvServiceDate.text = service.date
             tvServiceCost.text = "Rs ${service.serviceCost}"
 
+            // Optional fields: hide the view entirely when the record has no value.
             service.serviceType?.let {
                 tvServiceType.text = it
                 tvServiceType.visibility = View.VISIBLE
@@ -74,6 +91,7 @@ class ServiceRecordAdapter(
                 tvNotes.visibility = View.VISIBLE
             } ?: run { tvNotes.visibility = View.GONE }
 
+            // Rebuild photo thumbnails every bind to keep them in sync after list changes.
             imageContainer.removeAllViews()
             service.photoUrls?.takeIf { it.isNotEmpty() }?.forEach { url ->
                 val imageSize = dpToPx(itemView.context, 250)
@@ -95,9 +113,12 @@ class ServiceRecordAdapter(
                 imageContainer.addView(imageView)
             }
 
+            // Show or hide the expanded detail section based on the tracked set.
             llExpandedDetails.visibility =
                 if (expandedPositions.contains(position)) View.VISIBLE else View.GONE
 
+            // Hide the timeline connector lines at the top of the first item and
+            // the bottom of the last item so the timeline looks visually complete.
             viewLineTop.visibility = if (position == 0) View.INVISIBLE else View.VISIBLE
             viewLineBottom.visibility =
                 if (position == itemCount - 1) View.INVISIBLE else View.VISIBLE
@@ -108,6 +129,8 @@ class ServiceRecordAdapter(
                 } else {
                     expandedPositions.add(position)
                 }
+                // notifyItemChanged redraws only this row — avoids the full-list flash
+                // that notifyDataSetChanged() would produce on every tap.
                 notifyItemChanged(position)
             }
 

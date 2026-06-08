@@ -27,8 +27,11 @@ class StatsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Shared ViewModel — instance was created by the Activity with full factory parameters.
         viewModel = ViewModelProvider(requireActivity())[ServiceViewModel::class.java]
 
+        // combinedStats is a MediatorLiveData that fires whenever service records or fuel
+        // data changes, so the summary updates automatically without any manual refresh.
         viewModel.combinedStats.observe(viewLifecycleOwner) { stats ->
             view.findViewById<TextView>(R.id.tvSvcTotal).text = "Rs ${fmt(stats.svcTotal)}"
             view.findViewById<TextView>(R.id.tvFuelTotal).text = "Rs ${fmt(stats.fuelTotal)}"
@@ -37,6 +40,7 @@ class StatsFragment : Fragment() {
             view.findViewById<TextView>(R.id.tvAvgEfficiency).text = stats.avgEfficiency
             view.findViewById<TextView>(R.id.tvCostPerKm).text = stats.costPerKm
 
+            // Colour-code next service distance: red = overdue, lime = within 1 000 km, white = normal.
             val tvNext = view.findViewById<TextView>(R.id.tvNextService)
             when {
                 stats.nextServiceKm < 0 -> {
