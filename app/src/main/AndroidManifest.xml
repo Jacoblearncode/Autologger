@@ -56,7 +56,7 @@
             android:name=".AddServiceActivity"
             android:exported="false" />
         <activity
-            android:name=".ServiceRecordActivity"
+            android:name=".ServiceRecord.ServiceRecordActivity"
             android:exported="false" />
         <activity
             android:name=".Vehicle.AddVehicleActivity"
