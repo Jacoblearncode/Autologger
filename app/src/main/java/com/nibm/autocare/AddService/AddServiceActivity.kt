@@ -73,6 +73,13 @@ class AddServiceActivity : AppCompatActivity() {
     // Tracks weekly distance per registration so reminders can be scheduled
     private val vehicleWeeklyDistances = mutableMapOf<String, Int>()
 
+    // Edit mode — set true when launched from the Timeline tab's edit button
+    private var isEditMode = false
+    private var editRecordId: String = ""
+    private var editVehicleRegistration: String = ""
+    // Cloudinary URLs already saved for this record; preserved across edits
+    private val existingPhotoUrls = mutableListOf<String>()
+
     // Photo handling
     private lateinit var uploadedPhotosAdapter: UploadedPhotosAdapter
     private val uploadedPhotos = mutableListOf<Uri>()
@@ -117,6 +124,14 @@ class AddServiceActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_service)
 
+        // Read edit mode flags before any UI setup so fetchUserVehicles can select the right vehicle
+        isEditMode = intent.getBooleanExtra("isEditMode", false)
+        if (isEditMode) {
+            editRecordId = intent.getStringExtra("recordId") ?: ""
+            editVehicleRegistration = intent.getStringExtra("vehicleRegistration") ?: ""
+            existingPhotoUrls.addAll(intent.getStringArrayListExtra("existingPhotoUrls") ?: emptyList())
+        }
+
         initializeFirebase()
         initializeUIComponents()
         setupProgressDialog()
@@ -126,6 +141,9 @@ class AddServiceActivity : AppCompatActivity() {
         setupDatePicker()
         setupPhotoButtons()
         setupSaveButton()
+
+        // Pre-fill all fields after spinners are configured
+        if (isEditMode) prefillEditData()
     }
 
     private fun initializeFirebase() {
@@ -170,6 +188,70 @@ class AddServiceActivity : AppCompatActivity() {
         }
         rvUploadedPhotos.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         rvUploadedPhotos.adapter = uploadedPhotosAdapter
+    }
+
+    /**
+     * Populates all form fields from the Intent extras when editing an existing record.
+     * Called after setupServiceTypeSpinner() so restoreCheckedItems() overrides the
+     * default spinner-driven checklist with the record's actual saved items.
+     */
+    private fun prefillEditData() {
+        findViewById<TextView>(R.id.tvAppName).text = "Edit Service"
+        btnSave.text = "Update Service"
+
+        etServiceDate.setText(intent.getStringExtra("date") ?: "")
+        etOdometerReading.setText(intent.getStringExtra("odometerReading") ?: "")
+        etServiceCost.setText(intent.getStringExtra("serviceCost") ?: "")
+        etServiceNotes.setText(intent.getStringExtra("notes") ?: "")
+
+        // Set service type spinner to match the saved value
+        val savedType = intent.getStringExtra("serviceType") ?: ""
+        val types = listOf("5,000 km Service", "40,000 km Service", "100,000 km Service")
+        val idx = types.indexOf(savedType)
+        if (idx >= 0) spinnerServiceType.setSelection(idx)
+
+        // Restore the exact checked items rather than the spinner-default set
+        val saved = intent.getStringArrayListExtra("checkedItems") ?: arrayListOf()
+        restoreCheckedItems(saved)
+
+        if (existingPhotoUrls.isNotEmpty()) {
+            Toast.makeText(this, "${existingPhotoUrls.size} existing photo(s) will be kept", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun restoreCheckedItems(items: List<String>) {
+        // Show every checkbox so none are accidentally hidden after editing
+        val allBoxes = listOf(
+            cbEngineOilChange, cbOilFilterReplace, cbFluidLevelChecks, cbTireInspection,
+            cbBrakeSystemCheck, cbLightsElectricalsCheck, cbAirFilterInspection, cbWheelAlignmentCheck,
+            cbCabinFilterChange, cbFuelFilterInspection, cbBrakeFluidFlush, cbCoolantFluidFlush,
+            cbTransmissionOilChange, cbAirConditioningSystemCheck, cbTimingBeltChainReplacement,
+            cbSparkPlugReplacement, cbSuspensionComponentCheck, cbDriveBeltReplacement, cbFuelSystemService
+        )
+        allBoxes.forEach { it.visibility = View.VISIBLE; it.isChecked = false }
+
+        val checkboxMap = mapOf(
+            "Engine Oil Change" to cbEngineOilChange,
+            "Oil Filter Replace" to cbOilFilterReplace,
+            "Fluid Level Checks" to cbFluidLevelChecks,
+            "Tire Inspection" to cbTireInspection,
+            "Brake System Check" to cbBrakeSystemCheck,
+            "Lights and Electricals Check" to cbLightsElectricalsCheck,
+            "Air Filter Inspection" to cbAirFilterInspection,
+            "Wheel Alignment Check" to cbWheelAlignmentCheck,
+            "Cabin Filter Change" to cbCabinFilterChange,
+            "Fuel Filter Inspection" to cbFuelFilterInspection,
+            "Brake Fluid Flush" to cbBrakeFluidFlush,
+            "Coolant Fluid Flush" to cbCoolantFluidFlush,
+            "Transmission Oil Change" to cbTransmissionOilChange,
+            "Air Conditioning System Check" to cbAirConditioningSystemCheck,
+            "Timing Belt/Chain Replacement" to cbTimingBeltChainReplacement,
+            "Spark Plug Replacement" to cbSparkPlugReplacement,
+            "Suspension Component Check" to cbSuspensionComponentCheck,
+            "Drive Belt Replacement" to cbDriveBeltReplacement,
+            "Fuel System Service" to cbFuelSystemService
+        )
+        items.forEach { label -> checkboxMap[label]?.isChecked = true }
     }
 
     private fun setupProgressDialog() {
@@ -217,6 +299,13 @@ class AddServiceActivity : AppCompatActivity() {
                 )
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 spinnerVehicle.adapter = adapter
+
+                // In edit mode, lock the spinner to the vehicle that owns this record
+                if (isEditMode) {
+                    val pos = vehicleList.indexOf(editVehicleRegistration)
+                    if (pos >= 0) spinnerVehicle.setSelection(pos)
+                    spinnerVehicle.isEnabled = false
+                }
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -394,7 +483,9 @@ class AddServiceActivity : AppCompatActivity() {
             return
         }
 
-        val registrationNumber = spinnerVehicle.selectedItem?.toString() ?: run {
+        // In edit mode, vehicle is locked so always use editVehicleRegistration
+        val registrationNumber = if (isEditMode) editVehicleRegistration
+        else spinnerVehicle.selectedItem?.toString() ?: run {
             Toast.makeText(this, "Please select a vehicle", Toast.LENGTH_SHORT).show()
             return
         }
@@ -405,7 +496,9 @@ class AddServiceActivity : AppCompatActivity() {
         val serviceCost = etServiceCost.text.toString().trim()
         val notes = etServiceNotes.text.toString().trim()
         val checkedItems = getCheckedItems()
-        val dateKey = date.replace("/", "-")
+
+        // Edit mode: reuse original key so we update in place, not create a duplicate node
+        val recordKey = if (isEditMode) editRecordId else date.replace("/", "-")
 
         val serviceData = hashMapOf(
             "date" to date,
@@ -417,18 +510,23 @@ class AddServiceActivity : AppCompatActivity() {
         )
 
         val serviceRef = database.reference.child("users_services")
-            .child(userId)
-            .child(registrationNumber)
-            .child(dateKey)
+            .child(userId).child(registrationNumber).child(recordKey)
 
         serviceRef.setValue(serviceData)
             .addOnSuccessListener {
-                val weeklyDistance = vehicleWeeklyDistances[registrationNumber] ?: 0
-                ReminderScheduler.scheduleAfterService(this, registrationNumber, weeklyDistance)
-                if (uploadedPhotos.isNotEmpty()) {
-                    uploadPhotosToCloudinary(userId, registrationNumber, dateKey)
-                } else {
-                    navigateToHome()
+                if (!isEditMode) {
+                    // Schedule the next service reminder only for new records
+                    val weeklyDistance = vehicleWeeklyDistances[registrationNumber] ?: 0
+                    ReminderScheduler.scheduleAfterService(this, registrationNumber, weeklyDistance)
+                }
+                when {
+                    uploadedPhotos.isNotEmpty() ->
+                        // New local photos to upload; existing URLs merged inside uploadPhotosToCloudinary
+                        uploadPhotosToCloudinary(userId, registrationNumber, recordKey)
+                    existingPhotoUrls.isNotEmpty() ->
+                        // Edit with no new photos — preserve the existing Cloudinary URLs
+                        savePhotoUrls(userId, registrationNumber, recordKey, existingPhotoUrls)
+                    else -> navigateToHome()
                 }
             }
             .addOnFailureListener {
@@ -482,7 +580,8 @@ class AddServiceActivity : AppCompatActivity() {
                         }
 
                         if (uploadedPhotoCount == totalPhotosToUpload) {
-                            savePhotoUrls(userId, registrationNumber, dateKey, photoUrls)
+                            // Combine existing Cloudinary URLs with newly uploaded ones
+                            savePhotoUrls(userId, registrationNumber, dateKey, existingPhotoUrls + photoUrls)
                         }
                     }
 
@@ -497,8 +596,9 @@ class AddServiceActivity : AppCompatActivity() {
                             ).show()
 
                             if (uploadedPhotoCount == totalPhotosToUpload) {
-                                if (photoUrls.isNotEmpty()) {
-                                    savePhotoUrls(userId, registrationNumber, dateKey, photoUrls)
+                                val allUrls = existingPhotoUrls + photoUrls
+                                if (allUrls.isNotEmpty()) {
+                                    savePhotoUrls(userId, registrationNumber, dateKey, allUrls)
                                 } else {
                                     progressDialog.dismiss()
                                     navigateToHome()
@@ -536,6 +636,11 @@ class AddServiceActivity : AppCompatActivity() {
     }
 
     private fun navigateToHome() {
+        if (isEditMode) {
+            // Return to ServiceRecordActivity (which is already on the back stack)
+            finish()
+            return
+        }
         val intent = Intent(this, HomeActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
         }

@@ -26,6 +26,7 @@ import com.nibm.autocare.model.ServiceRecord
  * tapped row, avoiding the full-list flash that notifyDataSetChanged() causes.
  */
 class ServiceRecordAdapter(
+    private val onEditClick: (ServiceRecord) -> Unit,
     private val onDeleteClick: (String) -> Unit
 ) : RecyclerView.Adapter<ServiceRecordAdapter.ServiceViewHolder>() {
 
@@ -66,6 +67,7 @@ class ServiceRecordAdapter(
         private val tvNotes: TextView = itemView.findViewById(R.id.tvNotes)
         private val llExpandedDetails: LinearLayout = itemView.findViewById(R.id.llExpandedDetails)
         private val imageContainer: LinearLayout = itemView.findViewById(R.id.imageContainer)
+        private val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
         private val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
         private val viewLineTop: View = itemView.findViewById(R.id.viewLineTop)
         private val viewLineBottom: View = itemView.findViewById(R.id.viewLineBottom)
@@ -134,6 +136,7 @@ class ServiceRecordAdapter(
                 notifyItemChanged(position)
             }
 
+            btnEdit.setOnClickListener { onEditClick(service) }
             btnDelete.setOnClickListener { onDeleteClick(service.recordId) }
         }
 

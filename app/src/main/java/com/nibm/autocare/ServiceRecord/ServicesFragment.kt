@@ -1,5 +1,6 @@
 package com.nibm.autocare.ServiceRecord
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,8 +10,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.nibm.autocare.AddServiceActivity
 import com.nibm.autocare.R
 import com.nibm.autocare.adapter.ServiceRecordAdapter
+import com.nibm.autocare.model.ServiceRecord
 
 /**
  * Tab 1 — displays the scrollable service record timeline.
@@ -37,6 +40,7 @@ class ServicesFragment : Fragment() {
         rv.layoutManager = LinearLayoutManager(requireContext())
 
         serviceAdapter = ServiceRecordAdapter(
+            onEditClick = { record -> launchEditActivity(record) },
             onDeleteClick = { recordId -> confirmDelete(recordId) }
         )
         rv.adapter = serviceAdapter
@@ -52,6 +56,22 @@ class ServicesFragment : Fragment() {
             view.findViewById<View>(R.id.emptyStateServices).visibility =
                 if (empty) View.VISIBLE else View.GONE
         }
+    }
+
+    private fun launchEditActivity(record: ServiceRecord) {
+        val intent = Intent(requireContext(), AddServiceActivity::class.java).apply {
+            putExtra("isEditMode", true)
+            putExtra("recordId", record.recordId)
+            putExtra("vehicleRegistration", viewModel.vehicleRegistration)
+            putExtra("date", record.date)
+            putExtra("odometerReading", record.odometerReading)
+            putExtra("serviceCost", record.serviceCost)
+            putExtra("serviceType", record.serviceType ?: "")
+            putExtra("notes", record.notes ?: "")
+            putStringArrayListExtra("checkedItems", ArrayList(record.checkedItems ?: emptyList()))
+            putStringArrayListExtra("existingPhotoUrls", ArrayList(record.photoUrls ?: emptyList()))
+        }
+        startActivity(intent)
     }
 
     private fun confirmDelete(recordId: String) {
