@@ -1,38 +1,26 @@
 <resources>
-    <color name="purple_200">#BB86FC</color>
-    <color name="purple_500">#6200EE</color>
-    <color name="purple_700">#3700B3</color>
-    <color name="teal_200">#03DAC5</color>
-    <color name="teal_700">#018786</color>
+    <!-- Fixed palette (same in both modes) -->
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
     <color name="yellow">#FFD700</color>
-    <color name="background_color">#121212</color>
-
-    <color name="light_yellow">#FFFACD</color>
-    <color name="dark_gray">#1E1E1E</color>
-    <color name="light_gray">#DDDDDD</color>
-    <color name="green">#4CAF50</color>
-
-    <color name="gray_300">#E0E0E0</color>
-    <color name="gray_500">#9E9E9E</color>
+    <color name="red">#D32F2F</color>
+    <color name="green">#2E7D32</color>
+    <color name="dark_yellow">#E65100</color>
     <color name="red_400">#EF5350</color>
-
+    <color name="light_yellow">#FFFACD</color>
     <color name="low_yellow">#A08220</color>
-    <color name="dark_yellow">#FFA000</color>
-    <color name="red">#F44336</color>
-    <color name="gray">#808080</color>
 
-    <color name="status_bar_light">#6200EE</color>
-    <color name="status_bar_dark">#121212</color>
-
-    <!-- Dark theme palette -->
-    <color name="bg_primary">#121212</color>
-    <color name="bg_surface">#1E1E1E</color>
-    <color name="bg_card">#252525</color>
-    <color name="accent_lime">#B5FF4D</color>
-    <color name="text_primary">#FFFFFF</color>
-    <color name="text_secondary">#ABABAB</color>
-    <color name="divider_dark">#2C2C2C</color>
-
+    <!-- Light theme semantic colors (default) -->
+    <color name="bg_primary">#F5F7FA</color>
+    <color name="bg_surface">#FFFFFF</color>
+    <color name="bg_card">#FFFFFF</color>
+    <color name="accent_lime">#4A7C00</color>
+    <color name="text_primary">#1C1C1E</color>
+    <color name="text_secondary">#6C6C70</color>
+    <color name="divider_dark">#E5E5EA</color>
+    <color name="gray_300">#E5E5EA</color>
+    <color name="gray_500">#9E9E9E</color>
+    <color name="gray">#8E8E93</color>
+    <color name="dark_gray">#F0F0F5</color>
+    <color name="background_color">#F5F7FA</color>
 </resources>

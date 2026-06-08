@@ -9,6 +9,7 @@ class AutoCareCloudinary : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        ThemeManager.applyTheme(this)
         FirebaseDatabase.getInstance().setPersistenceEnabled(true)
         initializeCloudinary()
     }

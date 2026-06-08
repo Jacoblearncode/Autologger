@@ -1,4 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Dark theme override -->
     <style name="Base.Theme.AutoCare" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/accent_lime</item>
         <item name="colorOnPrimary">@color/black</item>

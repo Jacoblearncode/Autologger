@@ -1,0 +1,18 @@
+<resources>
+    <!-- Dark theme semantic color overrides -->
+    <color name="bg_primary">#121212</color>
+    <color name="bg_surface">#1E1E1E</color>
+    <color name="bg_card">#252525</color>
+    <color name="accent_lime">#B5FF4D</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#ABABAB</color>
+    <color name="divider_dark">#2C2C2C</color>
+    <color name="gray_300">#2C2C2C</color>
+    <color name="gray">#808080</color>
+    <color name="dark_gray">#1E1E1E</color>
+    <color name="background_color">#121212</color>
+    <!-- Status/semantic colors are slightly brighter in dark mode -->
+    <color name="red">#F44336</color>
+    <color name="green">#4CAF50</color>
+    <color name="dark_yellow">#FFA000</color>
+</resources>
