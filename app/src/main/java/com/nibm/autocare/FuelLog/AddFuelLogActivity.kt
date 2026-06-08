@@ -32,12 +32,23 @@ class AddFuelLogActivity : AppCompatActivity() {
 
     private var autoCalcEnabled = true
 
+    // Edit mode — populated from intent when launched via the edit button on a fuel log row
+    private var isEditMode = false
+    private var editLogId: String = ""
+    private var editVehicleRegistration: String = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_fuel_log)
 
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance()
+
+        isEditMode = intent.getBooleanExtra("isEditMode", false)
+        if (isEditMode) {
+            editLogId = intent.getStringExtra("logId") ?: ""
+            editVehicleRegistration = intent.getStringExtra("vehicleRegistration") ?: ""
+        }
 
         spinnerVehicle = findViewById(R.id.spinnerVehicle)
         spinnerFuelType = findViewById(R.id.spinnerFuelType)
@@ -54,9 +65,38 @@ class AddFuelLogActivity : AppCompatActivity() {
         setupNavigation()
         fetchVehicles()
 
+        // Pre-fill fields after spinners are ready
+        if (isEditMode) prefillEditData()
+
         findViewById<View>(R.id.btnSave).setOnClickListener {
             if (validateInputs()) saveFuelLog()
         }
+    }
+
+    /**
+     * Populates all form fields from Intent extras when editing an existing fuel log.
+     * Also updates the title and button text, and selects the correct fuel type in the spinner.
+     */
+    private fun prefillEditData() {
+        findViewById<TextView>(R.id.tvAppName).text = "Edit Fuel Log"
+        findViewById<Button>(R.id.btnSave).text = "Update Fuel Log"
+
+        etDate.setText(intent.getStringExtra("date") ?: "")
+        etOdometer.setText(intent.getStringExtra("odometer") ?: "")
+        etNotes.setText(intent.getStringExtra("notes") ?: "")
+
+        // Disable auto-calc while restoring values so we don't clobber the saved totalCost
+        autoCalcEnabled = false
+        etLiters.setText(intent.getStringExtra("liters") ?: "")
+        etPricePerLiter.setText(intent.getStringExtra("pricePerLiter") ?: "")
+        etTotalCost.setText(intent.getStringExtra("totalCost") ?: "")
+        autoCalcEnabled = true
+
+        // Set fuel type spinner to the saved value
+        val savedType = intent.getStringExtra("fuelType") ?: "Petrol"
+        val types = listOf("Petrol", "Diesel", "CNG")
+        val idx = types.indexOf(savedType)
+        if (idx >= 0) spinnerFuelType.setSelection(idx)
     }
 
     private fun setupFuelTypeSpinner() {
@@ -139,6 +179,13 @@ class AddFuelLogActivity : AppCompatActivity() {
                     )
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                     spinnerVehicle.adapter = adapter
+
+                    // Lock spinner to the existing vehicle so the log can't be reassigned
+                    if (isEditMode) {
+                        val pos = regs.indexOf(editVehicleRegistration)
+                        if (pos >= 0) spinnerVehicle.setSelection(pos)
+                        spinnerVehicle.isEnabled = false
+                    }
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -171,7 +218,9 @@ class AddFuelLogActivity : AppCompatActivity() {
 
     private fun saveFuelLog() {
         val uid = auth.currentUser?.uid ?: return
-        val registration = spinnerVehicle.selectedItem?.toString() ?: return
+        // In edit mode, vehicle is locked to the original; otherwise read from spinner
+        val registration = if (isEditMode) editVehicleRegistration
+                           else spinnerVehicle.selectedItem?.toString() ?: return
 
         val data = hashMapOf(
             "registrationNumber" to registration,
@@ -184,14 +233,25 @@ class AddFuelLogActivity : AppCompatActivity() {
             "notes" to etNotes.text.toString().trim()
         )
 
-        database.reference.child("users_fuel_logs").child(uid).push()
-            .setValue(data)
+        // Edit mode: write to the existing node key; add mode: push() creates a new key
+        val ref = if (isEditMode)
+            database.reference.child("users_fuel_logs").child(uid).child(editLogId)
+        else
+            database.reference.child("users_fuel_logs").child(uid).push()
+
+        ref.setValue(data)
             .addOnSuccessListener {
-                Toast.makeText(this, "Fuel log saved", Toast.LENGTH_SHORT).show()
-                val intent = Intent(this, FuelLogActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                startActivity(intent)
-                finish()
+                val msg = if (isEditMode) "Fuel log updated" else "Fuel log saved"
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                if (isEditMode) {
+                    // Return to FuelLogActivity (already on the back stack)
+                    finish()
+                } else {
+                    startActivity(Intent(this, FuelLogActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    })
+                    finish()
+                }
             }
             .addOnFailureListener {
                 Toast.makeText(this, "Failed to save: ${it.message}", Toast.LENGTH_SHORT).show()

@@ -89,6 +89,15 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Edit insurance date" />
 
+                <ImageButton
+                    android:id="@+id/btnDeleteInsurance"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center_vertical"
+                    android:src="@drawable/ic_delete"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Clear insurance date" />
+
             </LinearLayout>
 
             <!-- Road Tax Card -->
@@ -145,6 +154,15 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Edit road tax date" />
 
+                <ImageButton
+                    android:id="@+id/btnDeleteRoadTax"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center_vertical"
+                    android:src="@drawable/ic_delete"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Clear road tax date" />
+
             </LinearLayout>
 
             <!-- Fitness Certificate Card -->
@@ -200,6 +218,15 @@
                     android:src="@drawable/ic_edit"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Edit fitness certificate date" />
+
+                <ImageButton
+                    android:id="@+id/btnDeleteFitness"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center_vertical"
+                    android:src="@drawable/ic_delete"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Clear fitness certificate date" />
 
             </LinearLayout>
 

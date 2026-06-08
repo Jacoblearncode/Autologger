@@ -9,31 +9,33 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.nibm.autocare.FuelLog.FuelLogViewModel
+import com.nibm.autocare.FuelLog.FuelLogViewModelFactory
 import com.nibm.autocare.FuelLog.FuelPriceTrendActivity
 import com.nibm.autocare.Vehicle.AddVehicleActivity
+import com.nibm.autocare.model.FuelLog
 import kotlinx.coroutines.launch
 import java.io.File
 
+/**
+ * Displays the user's fuel fill-up history with vehicle filter and PDF/CSV export.
+ *
+ * Follows MVVM: FuelLogViewModel owns the Firebase listener and exposes LiveData.
+ * This Activity only handles UI: filtering, adapter setup, navigation, and file export.
+ */
 class FuelLogActivity : AppCompatActivity() {
 
+    private lateinit var viewModel: FuelLogViewModel
     private lateinit var lvFuelLogs: ListView
     private lateinit var spinnerFilter: Spinner
     private lateinit var tvEmptyTitle: TextView
     private lateinit var tvEmptySubtitle: TextView
-    private lateinit var auth: FirebaseAuth
-    private lateinit var database: FirebaseDatabase
-    private lateinit var fuelLogsRef: DatabaseReference
 
-    private val allLogs = mutableListOf<FuelLog>()
+    // Local filter state; always a subset of viewModel.fuelLogs.value
     private val displayedLogs = mutableListOf<FuelLog>()
-    private var logsListener: ValueEventListener? = null
     private var selectedVehicle = ALL_VEHICLES
     private lateinit var pdfGenerator: PdfGenerator
 
@@ -46,8 +48,7 @@ class FuelLogActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_fuel_log)
 
-        auth = FirebaseAuth.getInstance()
-        database = FirebaseDatabase.getInstance()
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
         lvFuelLogs = findViewById(R.id.lvFuelLogs)
         spinnerFilter = findViewById(R.id.spinnerVehicleFilter)
@@ -58,30 +59,24 @@ class FuelLogActivity : AppCompatActivity() {
         lvFuelLogs.setEmptyView(emptyState)
 
         selectedVehicle = intent.getStringExtra(EXTRA_VEHICLE) ?: ALL_VEHICLES
-
-        fuelLogsRef = database.reference
-            .child("users_fuel_logs")
-            .child(auth.currentUser?.uid ?: "")
-
         pdfGenerator = PdfGenerator(this)
 
+        viewModel = ViewModelProvider(this, FuelLogViewModelFactory(userId))[FuelLogViewModel::class.java]
+        observeViewModel()
         setupNavigation()
-        setupFilterSpinner()
 
         findViewById<View>(R.id.btnAddFuelLog).setOnClickListener {
             startActivity(Intent(this, AddFuelLogActivity::class.java))
         }
-
         findViewById<View>(R.id.btnFuelTrend).setOnClickListener {
             startActivity(Intent(this, FuelPriceTrendActivity::class.java))
         }
-
         findViewById<View>(R.id.btnDownloadFuelPdf).setOnClickListener {
             if (displayedLogs.isEmpty()) {
                 Toast.makeText(this, "No fuel logs to export", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            androidx.appcompat.app.AlertDialog.Builder(this)
+            AlertDialog.Builder(this)
                 .setTitle("Export Fuel Log")
                 .setItems(arrayOf("Export as PDF", "Export as CSV")) { _, which ->
                     if (which == 0) generateFuelPdf() else generateFuelCsv()
@@ -90,73 +85,22 @@ class FuelLogActivity : AppCompatActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        attachListener()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        logsListener?.let { fuelLogsRef.removeEventListener(it) }
-        logsListener = null
-    }
-
-    private fun attachListener() {
-        logsListener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                allLogs.clear()
-                for (snap in snapshot.children) {
-                    parseFuelLog(snap)?.let { allLogs.add(it) }
-                }
-                allLogs.sortByDescending { it.date }
-                calculateEfficiency(allLogs)
-                updateFilterSpinner()
-                applyFilter()
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@FuelLogActivity, "Failed to load fuel logs", Toast.LENGTH_SHORT).show()
-            }
+    private fun observeViewModel() {
+        // Full list from Firebase — re-apply filter and rebuild spinner on every change
+        viewModel.fuelLogs.observe(this) { allLogs ->
+            updateFilterSpinner(allLogs)
+            applyFilter(allLogs)
         }
-        fuelLogsRef.addValueEventListener(logsListener!!)
-    }
 
-    private fun parseFuelLog(snap: DataSnapshot): FuelLog? {
-        return try {
-            FuelLog(
-                id = snap.key ?: return null,
-                registrationNumber = snap.child("registrationNumber").getValue(String::class.java) ?: "",
-                date = snap.child("date").getValue(String::class.java) ?: "",
-                odometer = snap.child("odometer").getValue(String::class.java) ?: "",
-                liters = snap.child("liters").getValue(String::class.java) ?: "",
-                pricePerLiter = snap.child("pricePerLiter").getValue(String::class.java) ?: "",
-                totalCost = snap.child("totalCost").getValue(String::class.java) ?: "",
-                fuelType = snap.child("fuelType").getValue(String::class.java) ?: "",
-                notes = snap.child("notes").getValue(String::class.java) ?: ""
-            )
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun calculateEfficiency(logs: List<FuelLog>) {
-        val byVehicle = logs.groupBy { it.registrationNumber }
-        for ((_, vehicleLogs) in byVehicle) {
-            val sorted = vehicleLogs.sortedBy { it.odometer.toDoubleOrNull() ?: 0.0 }
-            for (i in 1 until sorted.size) {
-                val curr = sorted[i]
-                val prev = sorted[i - 1]
-                val currOdo = curr.odometer.toDoubleOrNull() ?: continue
-                val prevOdo = prev.odometer.toDoubleOrNull() ?: continue
-                val liters = curr.liters.toDoubleOrNull() ?: continue
-                if (liters > 0 && currOdo > prevOdo) {
-                    curr.efficiency = String.format("%.1f km/L", (currOdo - prevOdo) / liters)
-                }
+        viewModel.toastMessage.observe(this) { message ->
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                viewModel.clearToast()
             }
         }
     }
 
-    private fun updateFilterSpinner() {
+    private fun updateFilterSpinner(allLogs: List<FuelLog>) {
         val vehicles = mutableListOf(ALL_VEHICLES)
         vehicles.addAll(allLogs.map { it.registrationNumber }.distinct().sorted())
 
@@ -169,26 +113,21 @@ class FuelLogActivity : AppCompatActivity() {
         val idx = vehicles.indexOf(selectedVehicle)
         if (idx >= 0) spinnerFilter.setSelection(idx, false)
 
-        setupFilterSpinner()
-    }
-
-    private fun setupFilterSpinner() {
         spinnerFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
                 selectedVehicle = spinnerFilter.getItemAtPosition(pos).toString()
-                applyFilter()
+                applyFilter(viewModel.fuelLogs.value ?: emptyList())
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 
-    private fun applyFilter() {
+    private fun applyFilter(allLogs: List<FuelLog>) {
         displayedLogs.clear()
-        if (selectedVehicle == ALL_VEHICLES) {
-            displayedLogs.addAll(allLogs)
-        } else {
-            displayedLogs.addAll(allLogs.filter { it.registrationNumber == selectedVehicle })
-        }
+        displayedLogs.addAll(
+            if (selectedVehicle == ALL_VEHICLES) allLogs
+            else allLogs.filter { it.registrationNumber == selectedVehicle }
+        )
 
         if (displayedLogs.isEmpty()) {
             if (allLogs.isEmpty()) {
@@ -203,70 +142,63 @@ class FuelLogActivity : AppCompatActivity() {
         lvFuelLogs.adapter = FuelLogAdapter(displayedLogs)
     }
 
-    private fun showDeleteConfirmation(logId: String) {
+    private fun confirmDelete(logId: String) {
         AlertDialog.Builder(this)
             .setTitle("Delete Fuel Log")
             .setMessage("Are you sure you want to delete this fuel log?")
-            .setPositiveButton("Delete") { _, _ ->
-                fuelLogsRef.child(logId).removeValue()
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "Fuel log deleted", Toast.LENGTH_SHORT).show()
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Failed to delete", Toast.LENGTH_SHORT).show()
-                    }
-            }
+            .setPositiveButton("Delete") { _, _ -> viewModel.deleteFuelLog(logId) }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun generateFuelPdf() {
-        val progress = AlertDialog.Builder(this)
-            .setMessage("Generating PDF...")
-            .setCancelable(false)
-            .create()
-            .also { it.show() }
+    private fun launchEditForm(log: FuelLog) {
+        startActivity(Intent(this, AddFuelLogActivity::class.java).apply {
+            putExtra("isEditMode", true)
+            putExtra("logId", log.id)
+            putExtra("vehicleRegistration", log.registrationNumber)
+            putExtra("date", log.date)
+            putExtra("odometer", log.odometer)
+            putExtra("liters", log.liters)
+            putExtra("pricePerLiter", log.pricePerLiter)
+            putExtra("totalCost", log.totalCost)
+            putExtra("fuelType", log.fuelType)
+            putExtra("notes", log.notes)
+        })
+    }
 
+    private fun generateFuelPdf() {
+        val dialog = AlertDialog.Builder(this).setMessage("Generating PDF...").setCancelable(false).create().also { it.show() }
         lifecycleScope.launch {
             val label = if (selectedVehicle == ALL_VEHICLES) ALL_VEHICLES else selectedVehicle
-            val (filePath, success) = pdfGenerator.generateFuelLogPdf(label, displayedLogs)
-            progress.dismiss()
-            if (success && filePath != null) {
-                shareFile(filePath, "application/pdf")
-            } else {
-                Toast.makeText(this@FuelLogActivity, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
-            }
+            val (path, ok) = pdfGenerator.generateFuelLogPdf(label, displayedLogs)
+            dialog.dismiss()
+            if (ok && path != null) shareFile(path, "application/pdf")
+            else Toast.makeText(this@FuelLogActivity, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun generateFuelCsv() {
-        val progress = AlertDialog.Builder(this)
-            .setMessage("Generating CSV...")
-            .setCancelable(false)
-            .create()
-            .also { it.show() }
-
+        val dialog = AlertDialog.Builder(this).setMessage("Generating CSV...").setCancelable(false).create().also { it.show() }
         lifecycleScope.launch {
             val label = if (selectedVehicle == ALL_VEHICLES) ALL_VEHICLES else selectedVehicle
-            val (filePath, success) = pdfGenerator.generateFuelLogCsv(label, displayedLogs)
-            progress.dismiss()
-            if (success && filePath != null) {
-                shareFile(filePath, "text/csv")
-            } else {
-                Toast.makeText(this@FuelLogActivity, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
-            }
+            val (path, ok) = pdfGenerator.generateFuelLogCsv(label, displayedLogs)
+            dialog.dismiss()
+            if (ok && path != null) shareFile(path, "text/csv")
+            else Toast.makeText(this@FuelLogActivity, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun shareFile(filePath: String, mimeType: String) {
         val file = File(filePath)
         val uri = FileProvider.getUriForFile(this, "${packageName}.provider", file)
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = mimeType
-            putExtra(Intent.EXTRA_STREAM, uri)
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        }
-        startActivity(Intent.createChooser(shareIntent, "Share ${file.name}"))
+        startActivity(Intent.createChooser(
+            Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, uri)
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            },
+            "Share ${file.name}"
+        ))
     }
 
     private fun setupNavigation() {
@@ -310,9 +242,7 @@ class FuelLogActivity : AppCompatActivity() {
             vh.tvTotalCost.text = if (log.totalCost.isNotBlank()) "Rs ${log.totalCost}" else "—"
             vh.tvLitersSummary.text = "${log.liters} L"
             vh.tvFuelType.text = log.fuelType
-
-            vh.tvPricePerLiter.text = if (log.pricePerLiter.isNotBlank())
-                "Rs ${log.pricePerLiter}/L" else "Price not recorded"
+            vh.tvPricePerLiter.text = if (log.pricePerLiter.isNotBlank()) "Rs ${log.pricePerLiter}/L" else "Price not recorded"
 
             if (log.efficiency.isNotBlank()) {
                 vh.tvEfficiency.text = "Efficiency: ${log.efficiency}"
@@ -337,9 +267,8 @@ class FuelLogActivity : AppCompatActivity() {
                 notifyDataSetChanged()
             }
 
-            vh.btnDelete.setOnClickListener {
-                showDeleteConfirmation(log.id)
-            }
+            vh.btnEdit.setOnClickListener { launchEditForm(log) }
+            vh.btnDelete.setOnClickListener { confirmDelete(log.id) }
 
             return view
         }
@@ -355,20 +284,8 @@ class FuelLogActivity : AppCompatActivity() {
             val tvEfficiency: TextView = view.findViewById(R.id.tvEfficiency)
             val tvNotes: TextView = view.findViewById(R.id.tvNotes)
             val llExpandedDetails: LinearLayout = view.findViewById(R.id.llExpandedDetails)
+            val btnEdit: ImageButton = view.findViewById(R.id.btnEdit)
             val btnDelete: ImageButton = view.findViewById(R.id.btnDelete)
         }
     }
-
-    data class FuelLog(
-        val id: String,
-        val registrationNumber: String,
-        val date: String,
-        val odometer: String,
-        val liters: String,
-        val pricePerLiter: String,
-        val totalCost: String,
-        val fuelType: String,
-        val notes: String,
-        var efficiency: String = ""
-    )
 }

@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
@@ -56,12 +57,33 @@ class VehicleDocumentsActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.btnEditInsurance).setOnClickListener {
             showDatePicker("insurance", tvInsuranceExpiry, tvInsuranceCountdown)
         }
+        findViewById<ImageButton>(R.id.btnDeleteInsurance).setOnClickListener {
+            confirmClear("insurance", tvInsuranceExpiry, tvInsuranceCountdown)
+        }
         findViewById<ImageButton>(R.id.btnEditRoadTax).setOnClickListener {
             showDatePicker("road_tax", tvRoadTaxExpiry, tvRoadTaxCountdown)
+        }
+        findViewById<ImageButton>(R.id.btnDeleteRoadTax).setOnClickListener {
+            confirmClear("road_tax", tvRoadTaxExpiry, tvRoadTaxCountdown)
         }
         findViewById<ImageButton>(R.id.btnEditFitness).setOnClickListener {
             showDatePicker("fitness", tvFitnessExpiry, tvFitnessCountdown)
         }
+        findViewById<ImageButton>(R.id.btnDeleteFitness).setOnClickListener {
+            confirmClear("fitness", tvFitnessExpiry, tvFitnessCountdown)
+        }
+    }
+
+    private fun confirmClear(field: String, tvDate: TextView, tvCountdown: TextView) {
+        AlertDialog.Builder(this)
+            .setTitle("Clear Date")
+            .setMessage("Remove the saved expiry date for this document?")
+            .setPositiveButton("Clear") { _, _ ->
+                docsRef.child(field).removeValue()
+                    .addOnSuccessListener { updateCard(null, tvDate, tvCountdown) }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun loadDocuments() {
