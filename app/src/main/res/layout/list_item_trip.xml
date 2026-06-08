@@ -46,6 +46,15 @@
             android:textStyle="bold" />
 
         <ImageButton
+            android:id="@+id/btnEditTrip"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_edit"
+            android:tint="@color/gray"
+            android:contentDescription="Edit trip" />
+
+        <ImageButton
             android:id="@+id/btnDeleteTrip"
             android:layout_width="32dp"
             android:layout_height="32dp"

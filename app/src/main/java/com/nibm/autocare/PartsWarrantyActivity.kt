@@ -9,90 +9,83 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.*
+import com.nibm.autocare.Parts.PartsWarrantyViewModel
+import com.nibm.autocare.Parts.PartsWarrantyViewModelFactory
+import com.nibm.autocare.model.Part
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+/**
+ * Displays replaced parts/components for a vehicle with warranty expiry tracking.
+ * PartsWarrantyViewModel owns the Firebase listener and write operations.
+ */
 class PartsWarrantyActivity : AppCompatActivity() {
 
+    private lateinit var viewModel: PartsWarrantyViewModel
     private lateinit var lvParts: ListView
     private lateinit var vehicleRegistration: String
-    private val auth = FirebaseAuth.getInstance()
-    private val database = FirebaseDatabase.getInstance()
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    private lateinit var partsRef: DatabaseReference
-    private val partsList = mutableListOf<Part>()
-    private var partsListener: ValueEventListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_parts_warranty)
 
         vehicleRegistration = intent.getStringExtra("vehicleRegistration") ?: ""
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
         findViewById<TextView>(R.id.tvAppName).text = "Parts — $vehicleRegistration"
 
         lvParts = findViewById(R.id.lvParts)
         lvParts.setEmptyView(findViewById(R.id.emptyStateParts))
 
-        val uid = auth.currentUser?.uid ?: return
-        partsRef = database.reference
-            .child("users_parts")
-            .child(uid)
-            .child(vehicleRegistration)
+        viewModel = ViewModelProvider(
+            this, PartsWarrantyViewModelFactory(uid, vehicleRegistration)
+        )[PartsWarrantyViewModel::class.java]
+
+        observeViewModel()
 
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
-        findViewById<View>(R.id.btnAddPart).setOnClickListener { showAddPartDialog() }
+        findViewById<View>(R.id.btnAddPart).setOnClickListener { showPartDialog() }
     }
 
-    override fun onStart() {
-        super.onStart()
-        attachListener()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        partsListener?.let { partsRef.removeEventListener(it) }
-        partsListener = null
-    }
-
-    private fun attachListener() {
-        partsListener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                partsList.clear()
-                for (child in snapshot.children) {
-                    val part = Part(
-                        id = child.key ?: continue,
-                        name = child.child("name").getValue(String::class.java) ?: continue,
-                        installDate = child.child("installDate").getValue(String::class.java) ?: "",
-                        warrantyExpiry = child.child("warrantyExpiry").getValue(String::class.java) ?: "",
-                        notes = child.child("notes").getValue(String::class.java) ?: ""
-                    )
-                    partsList.add(part)
-                }
-                partsList.sortByDescending { it.installDate }
-                lvParts.adapter = PartsAdapter()
-            }
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@PartsWarrantyActivity, "Failed to load parts", Toast.LENGTH_SHORT).show()
+    private fun observeViewModel() {
+        viewModel.parts.observe(this) { parts ->
+            lvParts.adapter = PartsAdapter(parts)
+        }
+        viewModel.toastMessage.observe(this) { msg ->
+            if (msg != null) {
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                viewModel.clearToast()
             }
         }
-        partsRef.addValueEventListener(partsListener!!)
     }
 
-    private fun showAddPartDialog() {
+    /**
+     * Shows the add/edit dialog. Pass [existing] to pre-fill fields for editing;
+     * leave null to show a blank add form.
+     */
+    private fun showPartDialog(existing: Part? = null) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_part, null)
         val etPartName = dialogView.findViewById<EditText>(R.id.etPartName)
         val etInstallDate = dialogView.findViewById<EditText>(R.id.etInstallDate)
         val etWarrantyExpiry = dialogView.findViewById<EditText>(R.id.etWarrantyExpiry)
         val etNotes = dialogView.findViewById<EditText>(R.id.etPartNotes)
 
+        if (existing != null) {
+            etPartName.setText(existing.name)
+            etInstallDate.setText(existing.installDate)
+            etWarrantyExpiry.setText(existing.warrantyExpiry)
+            etNotes.setText(existing.notes)
+        }
+
         etInstallDate.setOnClickListener { showDatePickerFor(etInstallDate) }
         etWarrantyExpiry.setOnClickListener { showDatePickerFor(etWarrantyExpiry) }
 
         AlertDialog.Builder(this)
-            .setTitle("Add Replaced Part")
+            .setTitle(if (existing != null) "Edit Part" else "Add Replaced Part")
             .setView(dialogView)
             .setPositiveButton("Save") { _, _ ->
                 val name = etPartName.text.toString().trim()
@@ -106,10 +99,8 @@ class PartsWarrantyActivity : AppCompatActivity() {
                     "warrantyExpiry" to etWarrantyExpiry.text.toString().trim(),
                     "notes" to etNotes.text.toString().trim()
                 )
-                partsRef.push().setValue(data)
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Failed to save part", Toast.LENGTH_SHORT).show()
-                    }
+                // Null partId → push() new node; non-null → update existing
+                viewModel.savePart(existing?.id, data)
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -123,9 +114,7 @@ class PartsWarrantyActivity : AppCompatActivity() {
                 val picked = Calendar.getInstance().apply { set(year, month, day) }
                 et.setText(dateFormat.format(picked.time))
             },
-            cal.get(Calendar.YEAR),
-            cal.get(Calendar.MONTH),
-            cal.get(Calendar.DAY_OF_MONTH)
+            cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)
         ).show()
     }
 
@@ -136,12 +125,10 @@ class PartsWarrantyActivity : AppCompatActivity() {
             tvCountdown.text = ""
             return
         }
-
         tvExpiry.text = warrantyExpiry
         try {
             val expiry = dateFormat.parse(warrantyExpiry) ?: return
-            val today = Calendar.getInstance().time
-            val days = TimeUnit.MILLISECONDS.toDays(expiry.time - today.time)
+            val days = TimeUnit.MILLISECONDS.toDays(expiry.time - Calendar.getInstance().time.time)
             when {
                 days < 0 -> {
                     tvExpiry.setTextColor(ContextCompat.getColor(this, R.color.red))
@@ -165,27 +152,23 @@ class PartsWarrantyActivity : AppCompatActivity() {
         }
     }
 
-    inner class PartsAdapter : BaseAdapter() {
-        override fun getCount() = partsList.size
-        override fun getItem(pos: Int): Any = partsList[pos]
+    inner class PartsAdapter(private val parts: List<Part>) : BaseAdapter() {
+        override fun getCount() = parts.size
+        override fun getItem(pos: Int): Any = parts[pos]
         override fun getItemId(pos: Int) = pos.toLong()
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
             val view = convertView ?: LayoutInflater.from(parent?.context)
                 .inflate(R.layout.list_item_part, parent, false)
 
-            val part = partsList[position]
+            val part = parts[position]
             view.findViewById<TextView>(R.id.tvPartName).text = part.name
             view.findViewById<TextView>(R.id.tvInstallDate).text =
                 if (part.installDate.isNotEmpty()) "Installed: ${part.installDate}" else "Install date not set"
 
             val tvNotes = view.findViewById<TextView>(R.id.tvPartNotes)
-            if (part.notes.isNotEmpty()) {
-                tvNotes.text = part.notes
-                tvNotes.visibility = View.VISIBLE
-            } else {
-                tvNotes.visibility = View.GONE
-            }
+            tvNotes.text = part.notes
+            tvNotes.visibility = if (part.notes.isNotEmpty()) View.VISIBLE else View.GONE
 
             updateWarrantyViews(
                 part.warrantyExpiry,
@@ -193,13 +176,15 @@ class PartsWarrantyActivity : AppCompatActivity() {
                 view.findViewById(R.id.tvWarrantyCountdown)
             )
 
+            view.findViewById<View>(R.id.btnEditPart).setOnClickListener {
+                showPartDialog(part)
+            }
+
             view.findViewById<View>(R.id.btnDeletePart).setOnClickListener {
                 AlertDialog.Builder(this@PartsWarrantyActivity)
                     .setTitle("Delete Part")
                     .setMessage("Remove \"${part.name}\" from tracking?")
-                    .setPositiveButton("Delete") { _, _ ->
-                        partsRef.child(part.id).removeValue()
-                    }
+                    .setPositiveButton("Delete") { _, _ -> viewModel.deletePart(part.id) }
                     .setNegativeButton("Cancel", null)
                     .show()
             }
@@ -207,12 +192,4 @@ class PartsWarrantyActivity : AppCompatActivity() {
             return view
         }
     }
-
-    data class Part(
-        val id: String,
-        val name: String,
-        val installDate: String,
-        val warrantyExpiry: String,
-        val notes: String
-    )
 }
