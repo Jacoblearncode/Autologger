@@ -16,6 +16,7 @@
     <color name="red_400">#EF5350</color>
     <color name="light_yellow">#FFFACD</color>
     <color name="low_yellow">#A08220</color>
+    <color name="light_gray">#DDDDDD</color>
 
     <!-- Light theme semantic colors (default) -->
     <color name="bg_primary">#F5F7FA</color>
