@@ -71,10 +71,6 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".TestActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
             android:name=".Authentication.NewPasswordActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
