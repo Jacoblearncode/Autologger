@@ -191,6 +191,10 @@ class HomeActivity : AppCompatActivity() {
         viewModel.isLoading.observe(this) { loading ->
             swipeRefresh.isRefreshing = loading
         }
+
+        viewModel.lastServiceOdometers.observe(this) { scores ->
+            vehicleAdapter.submitHealthScores(scores)
+        }
     }
 
     private fun updateEmptyState(list: List<Vehicle>, isSearching: Boolean) {

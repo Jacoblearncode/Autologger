@@ -50,6 +50,13 @@ class ServiceViewModel(
         addSource(_fuelData) { recompute() }
     }
 
+    val efficiencyTrend: LiveData<List<Pair<String, Float>>> = MediatorLiveData<List<Pair<String, Float>>>().apply {
+        fun recompute() {
+            value = computeEfficiencyTrend(_fuelData.value ?: FuelData())
+        }
+        addSource(_fuelData) { recompute() }
+    }
+
     val monthlySpend: LiveData<List<MonthlySpend>> = MediatorLiveData<List<MonthlySpend>>().apply {
         fun recompute() {
             val records = _serviceRecords.value ?: emptyList()
@@ -66,7 +73,8 @@ class ServiceViewModel(
         val maxOdometer: Double = 0.0,
         val minOdometer: Double = Double.MAX_VALUE,
         val efficiencyLogs: List<Pair<Double, Double>> = emptyList(),
-        val monthlyFuelCost: Map<String, Double> = emptyMap()  // "MMM yy" -> total cost
+        val monthlyFuelCost: Map<String, Double> = emptyMap(),  // "MMM yy" -> total cost
+        val fuelEntries: List<Triple<Double, Double, String>> = emptyList()  // (odometer, liters, date)
     )
 
     // Monthly spend breakdown for the bar chart in StatsFragment.
@@ -120,6 +128,7 @@ class ServiceViewModel(
                     var minOdo = Double.MAX_VALUE
                     val logs = mutableListOf<Pair<Double, Double>>()
                     val monthlyFuel = mutableMapOf<String, Double>()
+                    val fuelEntries = mutableListOf<Triple<Double, Double, String>>()
 
                     for (child in snapshot.children) {
                         // Fuel logs are stored globally per user, so filter by this vehicle.
@@ -129,16 +138,20 @@ class ServiceViewModel(
                         val cost = child.child("totalCost").getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
                         totalCost += cost
 
+                        // Accumulate monthly fuel cost for the bar chart
+                        val dateStr = child.child("date").getValue(String::class.java)
+
                         val odo = child.child("odometer").getValue(String::class.java)?.toDoubleOrNull()
                         val liters = child.child("liters").getValue(String::class.java)?.toDoubleOrNull()
                         if (odo != null) {
                             maxOdo = maxOf(maxOdo, odo)
                             minOdo = minOf(minOdo, odo)
-                            if (liters != null && liters > 0) logs.add(odo to liters)
+                            if (liters != null && liters > 0) {
+                                logs.add(odo to liters)
+                                fuelEntries.add(Triple(odo, liters, dateStr ?: ""))
+                            }
                         }
 
-                        // Accumulate monthly fuel cost for the bar chart
-                        val dateStr = child.child("date").getValue(String::class.java)
                         if (dateStr != null && cost > 0) {
                             try {
                                 val key = keyFmt.format(inputFmt.parse(dateStr)!!)
@@ -146,7 +159,7 @@ class ServiceViewModel(
                             } catch (_: Exception) {}
                         }
                     }
-                    _fuelData.value = FuelData(totalCost, maxOdo, minOdo, logs, monthlyFuel)
+                    _fuelData.value = FuelData(totalCost, maxOdo, minOdo, logs, monthlyFuel, fuelEntries)
                 }
 
                 override fun onCancelled(error: DatabaseError) {}
@@ -154,7 +167,40 @@ class ServiceViewModel(
     }
 
     fun deleteServiceRecord(recordId: String) {
-        servicesRef.child(recordId).removeValue()
+        // Read photo URLs before deletion so they can be queued for CDN cleanup.
+        // Actual Cloudinary deletion requires server-side credentials and would be
+        // handled by a Cloud Function consuming the cloudinary_cleanup_queue node.
+        servicesRef.child(recordId).get().addOnSuccessListener { snapshot ->
+            val photoUrls = snapshot.child("photoUrls").children
+                .mapNotNull { it.getValue(String::class.java) }
+            if (photoUrls.isNotEmpty()) {
+                val publicIds = photoUrls.mapNotNull { extractCloudinaryPublicId(it) }
+                if (publicIds.isNotEmpty()) {
+                    database.reference
+                        .child("cloudinary_cleanup_queue")
+                        .child(userId)
+                        .child(recordId)
+                        .setValue(publicIds)
+                }
+            }
+            servicesRef.child(recordId).removeValue()
+        }.addOnFailureListener {
+            servicesRef.child(recordId).removeValue()
+        }
+    }
+
+    private fun extractCloudinaryPublicId(url: String): String? {
+        // Cloudinary URLs follow: https://res.cloudinary.com/{cloud}/image/upload/{transforms}/{public_id}.{ext}
+        return try {
+            val uploadIndex = url.indexOf("/upload/")
+            if (uploadIndex < 0) return null
+            val afterUpload = url.substring(uploadIndex + 8)
+            // Strip version prefix (v1234567890/) if present
+            val withoutVersion = if (afterUpload.matches(Regex("v\\d+/.*")))
+                afterUpload.substringAfter("/") else afterUpload
+            // Strip file extension
+            withoutVersion.substringBeforeLast(".")
+        } catch (_: Exception) { null }
     }
 
     fun restoreServiceRecord(record: ServiceRecord) {

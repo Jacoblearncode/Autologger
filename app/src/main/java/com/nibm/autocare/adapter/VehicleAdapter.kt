@@ -1,5 +1,6 @@
 package com.nibm.autocare.adapter
 
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,14 +13,6 @@ import com.bumptech.glide.Glide
 import com.nibm.autocare.R
 import com.nibm.autocare.model.Vehicle
 
-/**
- * RecyclerView adapter for the vehicle list on the Home screen.
- *
- * Uses lambda callbacks instead of a listener interface so the Activity can
- * pass inline handlers without creating a separate interface implementation.
- * Interaction types: tap → open service records, long-press → confirm delete,
- * edit button → open vehicle edit form.
- */
 class VehicleAdapter(
     private val onItemClick: (Vehicle) -> Unit,
     private val onItemLongClick: (Vehicle) -> Unit,
@@ -27,15 +20,16 @@ class VehicleAdapter(
 ) : RecyclerView.Adapter<VehicleAdapter.VehicleViewHolder>() {
 
     private val items = mutableListOf<Vehicle>()
+    private var healthScores: Map<String, Double> = emptyMap()
 
-    /**
-     * Replaces the current list and refreshes the RecyclerView.
-     * Called both when LiveData delivers a full update and when the search bar
-     * filters the list locally (no Firebase round-trip needed for search).
-     */
     fun submitList(newList: List<Vehicle>) {
         items.clear()
         items.addAll(newList)
+        notifyDataSetChanged()
+    }
+
+    fun submitHealthScores(scores: Map<String, Double>) {
+        healthScores = scores
         notifyDataSetChanged()
     }
 
@@ -58,6 +52,7 @@ class VehicleAdapter(
         private val tvManufacturedYear: TextView = itemView.findViewById(R.id.tvManufacturedYear)
         private val tvModel: TextView = itemView.findViewById(R.id.tvModel)
         private val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
+        private val tvHealthBadge: TextView = itemView.findViewById(R.id.tvHealthBadge)
 
         fun bind(vehicle: Vehicle) {
             tvRegistrationNumber.text = vehicle.registrationNumber
@@ -65,7 +60,6 @@ class VehicleAdapter(
             tvManufacturedYear.text = vehicle.manufacturedYear
             tvModel.text = vehicle.model
 
-            // Photo priority: user-uploaded (Cloudinary) > Wikipedia default > grey placeholder.
             when {
                 vehicle.photoUrl.isNotEmpty() -> {
                     Glide.with(itemView.context)
@@ -89,12 +83,31 @@ class VehicleAdapter(
                 }
             }
 
+            bindHealthBadge(vehicle)
+
             itemView.setOnClickListener { onItemClick(vehicle) }
-            itemView.setOnLongClickListener {
-                onItemLongClick(vehicle)
-                true
-            }
+            itemView.setOnLongClickListener { onItemLongClick(vehicle); true }
             btnEdit.setOnClickListener { onEditClick(vehicle) }
+        }
+
+        private fun bindHealthBadge(vehicle: Vehicle) {
+            val lastServiceOdo = healthScores[vehicle.registrationNumber] ?: -1.0
+            val kmSince = if (lastServiceOdo >= 0) vehicle.currentMileage - lastServiceOdo.toInt() else -1
+
+            val (text, colorRes) = when {
+                lastServiceOdo < 0 -> "—" to R.color.gray
+                kmSince >= 5000    -> "OVERDUE" to R.color.red
+                kmSince >= 3000    -> "SOON" to R.color.dark_yellow
+                else               -> "GOOD" to R.color.green
+            }
+
+            tvHealthBadge.text = text
+            val color = ContextCompat.getColor(itemView.context, colorRes)
+            tvHealthBadge.background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 6f
+                setColor(color)
+            }
         }
     }
 }

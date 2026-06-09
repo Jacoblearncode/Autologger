@@ -293,6 +293,59 @@
 
         </LinearLayout>
 
+        <!-- Fuel efficiency trend card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/bg_surface"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="FUEL EFFICIENCY TREND"
+                android:textColor="@color/accent_lime"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:layout_marginBottom="12dp" />
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/lineChartEfficiency"
+                android:layout_width="match_parent"
+                android:layout_height="180dp" />
+
+        </LinearLayout>
+
+        <!-- Cost breakdown pie chart card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/bg_surface"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="COST BREAKDOWN"
+                android:textColor="@color/accent_lime"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:layout_marginBottom="4dp" />
+
+            <com.github.mikephil.charting.charts.PieChart
+                android:id="@+id/pieChartCosts"
+                android:layout_width="match_parent"
+                android:layout_height="200dp" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
 </ScrollView>

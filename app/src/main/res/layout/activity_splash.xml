@@ -13,9 +13,26 @@
         android:textSize="@dimen/splash_text_size"
         android:textStyle="bold"
         android:gravity="center"
+        android:alpha="0"
+        app:layout_constraintBottom_toTopOf="@id/tvTagline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        app:layout_constraintVertical_bias="0.45" />
+
+    <TextView
+        android:id="@+id/tvTagline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your Smart Vehicle Companion"
+        android:textColor="#AAAAAA"
+        android:textSize="14sp"
+        android:alpha="0"
+        android:layout_marginTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/tvAppName" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

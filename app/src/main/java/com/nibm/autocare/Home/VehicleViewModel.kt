@@ -42,6 +42,9 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
     private val _isLoading = MutableLiveData<Boolean>(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
+    private val _lastServiceOdometers = MutableLiveData<Map<String, Double>>(emptyMap())
+    val lastServiceOdometers: LiveData<Map<String, Double>> = _lastServiceOdometers
+
     private val vehiclesRef: DatabaseReference =
         database.reference.child("users_vehicles").child(userId)
 
@@ -82,6 +85,28 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
         // It stays active for the ViewModel's entire lifetime, not tied to any Activity.
         vehiclesRef.addValueEventListener(vehiclesListener)
         fetchUsername()
+        fetchLastServiceOdometers()
+    }
+
+    private fun fetchLastServiceOdometers() {
+        database.reference.child("users_services").child(userId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val map = mutableMapOf<String, Double>()
+                    for (vehicleSnap in snapshot.children) {
+                        val reg = vehicleSnap.key ?: continue
+                        var maxOdo = 0.0
+                        for (recordSnap in vehicleSnap.children) {
+                            val odo = recordSnap.child("odometerReading")
+                                .getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
+                            maxOdo = maxOf(maxOdo, odo)
+                        }
+                        map[reg] = maxOdo
+                    }
+                    _lastServiceOdometers.value = map
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
     }
 
     // One-shot read; username rarely changes so a persistent listener would be wasteful.
@@ -148,7 +173,10 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
 
     fun refresh() {
         _isLoading.value = true
-        vehiclesRef.get().addOnCompleteListener { _isLoading.postValue(false) }
+        vehiclesRef.get().addOnCompleteListener {
+            _isLoading.postValue(false)
+            fetchLastServiceOdometers()
+        }
     }
 
     fun clearToast() {
