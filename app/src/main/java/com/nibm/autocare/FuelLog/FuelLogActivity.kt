@@ -8,9 +8,11 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.firebase.auth.FirebaseAuth
 import com.nibm.autocare.FuelLog.FuelLogViewModel
 import com.nibm.autocare.FuelLog.FuelLogViewModelFactory
@@ -38,6 +40,7 @@ class FuelLogActivity : AppCompatActivity() {
     private val displayedLogs = mutableListOf<FuelLog>()
     private var selectedVehicle = ALL_VEHICLES
     private lateinit var pdfGenerator: PdfGenerator
+    private lateinit var swipeRefresh: SwipeRefreshLayout
 
     companion object {
         const val EXTRA_VEHICLE = "vehicleRegistration"
@@ -52,11 +55,12 @@ class FuelLogActivity : AppCompatActivity() {
 
         lvFuelLogs = findViewById(R.id.lvFuelLogs)
         spinnerFilter = findViewById(R.id.spinnerVehicleFilter)
+        swipeRefresh = findViewById(R.id.swipeRefreshFuel)
+        swipeRefresh.setColorSchemeColors(ContextCompat.getColor(this, R.color.accent_lime))
 
         val emptyState = findViewById<View>(R.id.emptyStateFuel)
         tvEmptyTitle = emptyState.findViewById(R.id.tvEmptyTitle)
         tvEmptySubtitle = emptyState.findViewById(R.id.tvEmptySubtitle)
-        lvFuelLogs.setEmptyView(emptyState)
 
         selectedVehicle = intent.getStringExtra(EXTRA_VEHICLE) ?: ALL_VEHICLES
         pdfGenerator = PdfGenerator(this)
@@ -64,6 +68,8 @@ class FuelLogActivity : AppCompatActivity() {
         viewModel = ViewModelProvider(this, FuelLogViewModelFactory(userId))[FuelLogViewModel::class.java]
         observeViewModel()
         setupNavigation()
+
+        swipeRefresh.setOnRefreshListener { viewModel.refresh() }
 
         findViewById<View>(R.id.btnAddFuelLog).setOnClickListener {
             startActivity(Intent(this, AddFuelLogActivity::class.java))
@@ -98,6 +104,10 @@ class FuelLogActivity : AppCompatActivity() {
                 viewModel.clearToast()
             }
         }
+
+        viewModel.isLoading.observe(this) { loading ->
+            swipeRefresh.isRefreshing = loading
+        }
     }
 
     private fun updateFilterSpinner(allLogs: List<FuelLog>) {
@@ -129,6 +139,7 @@ class FuelLogActivity : AppCompatActivity() {
             else allLogs.filter { it.registrationNumber == selectedVehicle }
         )
 
+        val emptyState = findViewById<View>(R.id.emptyStateFuel)
         if (displayedLogs.isEmpty()) {
             if (allLogs.isEmpty()) {
                 tvEmptyTitle.text = "No fuel logs yet"
@@ -137,6 +148,11 @@ class FuelLogActivity : AppCompatActivity() {
                 tvEmptyTitle.text = "No logs for this vehicle"
                 tvEmptySubtitle.text = "Select a different vehicle or tap + to add a log"
             }
+            emptyState.visibility = View.VISIBLE
+            lvFuelLogs.visibility = View.GONE
+        } else {
+            emptyState.visibility = View.GONE
+            lvFuelLogs.visibility = View.VISIBLE
         }
 
         lvFuelLogs.adapter = FuelLogAdapter(displayedLogs)

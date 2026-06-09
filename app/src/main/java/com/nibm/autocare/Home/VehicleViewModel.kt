@@ -39,6 +39,9 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
     private val _toastMessage = MutableLiveData<String?>()
     val toastMessage: LiveData<String?> = _toastMessage
 
+    private val _isLoading = MutableLiveData<Boolean>(false)
+    val isLoading: LiveData<Boolean> = _isLoading
+
     private val vehiclesRef: DatabaseReference =
         database.reference.child("users_vehicles").child(userId)
 
@@ -141,6 +144,11 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
         viewModelScope.launch {
             callback(findVehicleId(registrationNumber))
         }
+    }
+
+    fun refresh() {
+        _isLoading.value = true
+        vehiclesRef.get().addOnCompleteListener { _isLoading.postValue(false) }
     }
 
     fun clearToast() {

@@ -1,6 +1,11 @@
 package com.nibm.autocare
 
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -21,6 +26,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.firebase.auth.FirebaseAuth
 import com.nibm.autocare.Authentication.LoginActivity
 import com.nibm.autocare.Home.VehicleViewModel
@@ -51,6 +57,10 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var emptyState: View
     private lateinit var tvEmptyTitle: TextView
     private lateinit var tvEmptySubtitle: TextView
+    private lateinit var swipeRefresh: SwipeRefreshLayout
+    private lateinit var tvOfflineBanner: TextView
+    private lateinit var connectivityManager: ConnectivityManager
+    private lateinit var networkCallback: ConnectivityManager.NetworkCallback
     private var searchQuery = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,12 +81,18 @@ class HomeActivity : AppCompatActivity() {
         emptyState = findViewById(R.id.emptyStateVehicles)
         tvEmptyTitle = emptyState.findViewById(R.id.tvEmptyTitle)
         tvEmptySubtitle = emptyState.findViewById(R.id.tvEmptySubtitle)
+        tvOfflineBanner = findViewById(R.id.tvOfflineBanner)
+        swipeRefresh = findViewById(R.id.swipeRefreshHome)
+        swipeRefresh.setColorSchemeColors(ContextCompat.getColor(this, R.color.accent_lime))
+        connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         setupRecyclerView()
         setupSearch()
 
         viewModel = ViewModelProvider(this, VehicleViewModelFactory(userId))[VehicleViewModel::class.java]
         observeViewModel()
+
+        swipeRefresh.setOnRefreshListener { viewModel.refresh() }
 
         requestNotificationPermissionIfNeeded()
 
@@ -90,6 +106,36 @@ class HomeActivity : AppCompatActivity() {
         findViewById<View>(R.id.llFuelLog).setOnClickListener {
             startActivity(Intent(this, FuelLogActivity::class.java))
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        tvOfflineBanner.visibility = if (isConnected()) View.GONE else View.VISIBLE
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                runOnUiThread { tvOfflineBanner.visibility = View.GONE }
+            }
+            override fun onLost(network: Network) {
+                runOnUiThread { tvOfflineBanner.visibility = View.VISIBLE }
+            }
+        }
+        connectivityManager.registerNetworkCallback(
+            NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build(),
+            networkCallback
+        )
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try { connectivityManager.unregisterNetworkCallback(networkCallback) } catch (_: Exception) {}
+    }
+
+    private fun isConnected(): Boolean {
+        val network = connectivityManager.activeNetwork ?: return false
+        val caps = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     private fun setupRecyclerView() {
@@ -140,6 +186,10 @@ class HomeActivity : AppCompatActivity() {
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                 viewModel.clearToast()
             }
+        }
+
+        viewModel.isLoading.observe(this) { loading ->
+            swipeRefresh.isRefreshing = loading
         }
     }
 

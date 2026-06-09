@@ -96,16 +96,33 @@
 
             </LinearLayout>
 
-            <!-- Cost (right side) -->
-            <TextView
-                android:id="@+id/tvServiceCost"
+            <!-- Cost + photo count badge (right side) -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
-                android:paddingEnd="12dp"
-                android:textColor="@color/text_primary"
-                android:textSize="17sp"
-                android:textStyle="bold" />
+                android:orientation="vertical"
+                android:gravity="end"
+                android:paddingEnd="12dp">
+
+                <TextView
+                    android:id="@+id/tvServiceCost"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvPhotoBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
 
         </LinearLayout>
 

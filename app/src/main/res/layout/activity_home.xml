@@ -56,6 +56,19 @@
 
   </LinearLayout>
 
+  <!-- Offline banner — visible only when no internet -->
+  <TextView
+      android:id="@+id/tvOfflineBanner"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:background="@color/red"
+      android:gravity="center"
+      android:padding="8dp"
+      android:text="No internet connection"
+      android:textColor="@color/white"
+      android:textSize="12sp"
+      android:visibility="gone" />
+
   <!-- Search bar -->
   <LinearLayout
       android:layout_width="match_parent"
@@ -92,60 +105,73 @@
 
   </LinearLayout>
 
-  <!-- Empty state -->
-  <LinearLayout
-      android:id="@+id/emptyStateVehicles"
+  <!-- Vehicle list + empty state wrapped in pull-to-refresh -->
+  <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+      android:id="@+id/swipeRefreshHome"
       android:layout_width="match_parent"
       android:layout_height="0dp"
       android:layout_weight="1"
-      android:orientation="vertical"
-      android:gravity="center"
-      android:padding="32dp"
-      android:visibility="gone">
+      android:layout_marginTop="8dp">
 
-      <ImageView
-          android:layout_width="80dp"
-          android:layout_height="80dp"
-          android:src="@drawable/ic_empty_vehicle"
-          android:alpha="0.3"
-          android:tint="@color/accent_lime"
-          android:contentDescription="No vehicles" />
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-      <TextView
-          android:id="@+id/tvEmptyTitle"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:text="No vehicles yet"
-          android:textSize="20sp"
-          android:textStyle="bold"
-          android:textColor="@color/text_primary"
-          android:layout_marginTop="16dp" />
-
-      <TextView
-          android:id="@+id/tvEmptySubtitle"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:text="Tap the Vehicle button below to add your first vehicle"
-          android:textSize="14sp"
-          android:textColor="@color/text_secondary"
+      <!-- Empty state -->
+      <LinearLayout
+          android:id="@+id/emptyStateVehicles"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:orientation="vertical"
           android:gravity="center"
-          android:layout_marginTop="8dp" />
+          android:padding="32dp"
+          android:visibility="gone">
 
-  </LinearLayout>
+          <ImageView
+              android:layout_width="80dp"
+              android:layout_height="80dp"
+              android:src="@drawable/ic_empty_vehicle"
+              android:alpha="0.3"
+              android:tint="@color/accent_lime"
+              android:contentDescription="No vehicles" />
 
-  <!-- Vehicle list -->
-  <androidx.recyclerview.widget.RecyclerView
-      android:id="@+id/rvVehicles"
-      android:layout_width="match_parent"
-      android:layout_height="0dp"
-      android:layout_weight="1"
-      android:layout_marginTop="8dp"
-      android:background="@color/bg_primary"
-      android:paddingStart="12dp"
-      android:paddingEnd="12dp"
-      android:paddingTop="4dp"
-      android:paddingBottom="12dp"
-      android:clipToPadding="false" />
+          <TextView
+              android:id="@+id/tvEmptyTitle"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="No vehicles yet"
+              android:textSize="20sp"
+              android:textStyle="bold"
+              android:textColor="@color/text_primary"
+              android:layout_marginTop="16dp" />
+
+          <TextView
+              android:id="@+id/tvEmptySubtitle"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Tap the Vehicle button below to add your first vehicle"
+              android:textSize="14sp"
+              android:textColor="@color/text_secondary"
+              android:gravity="center"
+              android:layout_marginTop="8dp" />
+
+      </LinearLayout>
+
+      <!-- Vehicle list -->
+      <androidx.recyclerview.widget.RecyclerView
+          android:id="@+id/rvVehicles"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:background="@color/bg_primary"
+          android:paddingStart="12dp"
+          android:paddingEnd="12dp"
+          android:paddingTop="4dp"
+          android:paddingBottom="12dp"
+          android:clipToPadding="false" />
+
+    </FrameLayout>
+
+  </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
   <include
       layout="@layout/footer"

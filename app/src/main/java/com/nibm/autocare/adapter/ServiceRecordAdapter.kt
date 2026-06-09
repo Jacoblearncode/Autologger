@@ -69,6 +69,7 @@ class ServiceRecordAdapter(
         private val imageContainer: LinearLayout = itemView.findViewById(R.id.imageContainer)
         private val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
         private val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
+        private val tvPhotoBadge: TextView = itemView.findViewById(R.id.tvPhotoBadge)
         private val viewLineTop: View = itemView.findViewById(R.id.viewLineTop)
         private val viewLineBottom: View = itemView.findViewById(R.id.viewLineBottom)
 
@@ -92,6 +93,14 @@ class ServiceRecordAdapter(
                 tvNotes.text = "Notes: $it"
                 tvNotes.visibility = View.VISIBLE
             } ?: run { tvNotes.visibility = View.GONE }
+
+            val photoCount = service.photoUrls?.size ?: 0
+            if (photoCount > 0) {
+                tvPhotoBadge.text = "📷 $photoCount photo${if (photoCount > 1) "s" else ""}"
+                tvPhotoBadge.visibility = View.VISIBLE
+            } else {
+                tvPhotoBadge.visibility = View.GONE
+            }
 
             // Rebuild photo thumbnails every bind to keep them in sync after list changes.
             imageContainer.removeAllViews()

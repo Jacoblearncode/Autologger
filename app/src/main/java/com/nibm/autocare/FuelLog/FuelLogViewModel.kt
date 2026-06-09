@@ -30,6 +30,9 @@ class FuelLogViewModel(private val userId: String) : ViewModel() {
     private val _toastMessage = MutableLiveData<String?>()
     val toastMessage: LiveData<String?> = _toastMessage
 
+    private val _isLoading = MutableLiveData<Boolean>(false)
+    val isLoading: LiveData<Boolean> = _isLoading
+
     // Continuous listener — fires whenever any log is added, edited, or deleted
     private val logsListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
@@ -49,6 +52,11 @@ class FuelLogViewModel(private val userId: String) : ViewModel() {
 
     init {
         logsRef.addValueEventListener(logsListener)
+    }
+
+    fun refresh() {
+        _isLoading.value = true
+        logsRef.get().addOnCompleteListener { _isLoading.postValue(false) }
     }
 
     fun deleteFuelLog(logId: String) {
