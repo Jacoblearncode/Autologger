@@ -29,6 +29,7 @@ class ServicesFragment : Fragment() {
     private lateinit var viewModel: ServiceViewModel
     private lateinit var serviceAdapter: ServiceRecordAdapter
     private var allRecords: List<ServiceRecord> = emptyList()
+    private var displayedRecords: List<ServiceRecord> = emptyList()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -55,9 +56,8 @@ class ServicesFragment : Fragment() {
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val pos = viewHolder.adapterPosition
-                val displayedList = serviceAdapter.currentList
-                if (pos < 0 || pos >= displayedList.size) return
-                val record = displayedList[pos]
+                if (pos < 0 || pos >= displayedRecords.size) return
+                val record = displayedRecords[pos]
                 viewModel.deleteServiceRecord(record.recordId)
                 Snackbar.make(requireView(), "Service record deleted", Snackbar.LENGTH_LONG)
                     .setAction("UNDO") { viewModel.restoreServiceRecord(record) }
@@ -92,6 +92,7 @@ class ServicesFragment : Fragment() {
                 r.date.contains(q)
             }
         }
+        displayedRecords = filtered
         serviceAdapter.submitList(filtered)
         val empty = filtered.isEmpty()
         rv.visibility = if (empty) View.GONE else View.VISIBLE
