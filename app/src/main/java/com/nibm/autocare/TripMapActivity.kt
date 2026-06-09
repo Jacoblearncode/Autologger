@@ -85,7 +85,7 @@ class TripMapActivity : AppCompatActivity() {
             TileSourcePolicy()
         ) {
             override fun getTileURLString(pMapTileIndex: Long): String {
-                return "https://maps.geoapify.com/v1/tile/osm-bright/" +
+                return "https://maps.geoapify.com/v1/tile/dark-matter/" +
                     "${MapTileIndex.getZoom(pMapTileIndex)}/" +
                     "${MapTileIndex.getX(pMapTileIndex)}/" +
                     "${MapTileIndex.getY(pMapTileIndex)}.png?apiKey=$API_KEY"
