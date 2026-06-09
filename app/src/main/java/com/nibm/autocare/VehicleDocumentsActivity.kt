@@ -12,6 +12,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.nibm.autocare.Reminder.ReminderScheduler
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -144,7 +145,12 @@ class VehicleDocumentsActivity : AppCompatActivity() {
                 val picked = Calendar.getInstance().apply { set(year, month, day) }
                 val dateStr = dateFormat.format(picked.time)
                 docsRef.child(field).setValue(dateStr)
-                    .addOnSuccessListener { updateCard(dateStr, tvDate, tvCountdown) }
+                    .addOnSuccessListener {
+                        updateCard(dateStr, tvDate, tvCountdown)
+                        ReminderScheduler.scheduleDocumentReminder(
+                            this@VehicleDocumentsActivity, vehicleRegistration, field, dateStr
+                        )
+                    }
             },
             cal.get(Calendar.YEAR),
             cal.get(Calendar.MONTH),

@@ -11,6 +11,8 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.nibm.autocare.model.ServiceRecord
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 /**
  * ViewModel for the Service Records screen, shared between ServicesFragment (Tab 1)
@@ -48,13 +50,27 @@ class ServiceViewModel(
         addSource(_fuelData) { recompute() }
     }
 
+    val monthlySpend: LiveData<List<MonthlySpend>> = MediatorLiveData<List<MonthlySpend>>().apply {
+        fun recompute() {
+            val records = _serviceRecords.value ?: emptyList()
+            val fuel = _fuelData.value ?: FuelData()
+            value = computeMonthlySpend(records, fuel)
+        }
+        addSource(_serviceRecords) { recompute() }
+        addSource(_fuelData) { recompute() }
+    }
+
     // Raw fuel data extracted from Firebase, used only by computeStats.
     data class FuelData(
         val totalCost: Double = 0.0,
         val maxOdometer: Double = 0.0,
         val minOdometer: Double = Double.MAX_VALUE,
-        val efficiencyLogs: List<Pair<Double, Double>> = emptyList()  // (odometer, liters) pairs
+        val efficiencyLogs: List<Pair<Double, Double>> = emptyList(),
+        val monthlyFuelCost: Map<String, Double> = emptyMap()  // "MMM yy" -> total cost
     )
+
+    // Monthly spend breakdown for the bar chart in StatsFragment.
+    data class MonthlySpend(val label: String, val svcAmount: Float, val fuelAmount: Float)
 
     // Derived stats surfaced in StatsFragment. -1 for nextServiceKm means no data yet.
     data class CombinedStats(
@@ -93,6 +109,9 @@ class ServiceViewModel(
 
     // One-shot read; fuel data is only needed for the summary card, not for real-time display.
     private fun fetchFuelData() {
+        val inputFmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val keyFmt = SimpleDateFormat("MMM yy", Locale.getDefault())
+
         database.reference.child("users_fuel_logs").child(userId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -100,6 +119,7 @@ class ServiceViewModel(
                     var maxOdo = 0.0
                     var minOdo = Double.MAX_VALUE
                     val logs = mutableListOf<Pair<Double, Double>>()
+                    val monthlyFuel = mutableMapOf<String, Double>()
 
                     for (child in snapshot.children) {
                         // Fuel logs are stored globally per user, so filter by this vehicle.
@@ -116,8 +136,17 @@ class ServiceViewModel(
                             minOdo = minOf(minOdo, odo)
                             if (liters != null && liters > 0) logs.add(odo to liters)
                         }
+
+                        // Accumulate monthly fuel cost for the bar chart
+                        val dateStr = child.child("date").getValue(String::class.java)
+                        if (dateStr != null && cost > 0) {
+                            try {
+                                val key = keyFmt.format(inputFmt.parse(dateStr)!!)
+                                monthlyFuel[key] = (monthlyFuel[key] ?: 0.0) + cost
+                            } catch (_: Exception) {}
+                        }
                     }
-                    _fuelData.value = FuelData(totalCost, maxOdo, minOdo, logs)
+                    _fuelData.value = FuelData(totalCost, maxOdo, minOdo, logs, monthlyFuel)
                 }
 
                 override fun onCancelled(error: DatabaseError) {}
@@ -191,6 +220,33 @@ class ServiceViewModel(
             nextServiceKm = nextServiceKm,
             lastServiceOdometer = lastServiceOdo
         )
+    }
+
+    private fun computeMonthlySpend(records: List<ServiceRecord>, fuel: FuelData): List<MonthlySpend> {
+        val inputFmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val keyFmt = SimpleDateFormat("MMM yy", Locale.getDefault())
+        val sortFmt = SimpleDateFormat("MMM yy", Locale.getDefault())
+
+        val svcByMonth = mutableMapOf<String, Double>()
+        for (record in records) {
+            try {
+                val key = keyFmt.format(inputFmt.parse(record.date)!!)
+                svcByMonth[key] = (svcByMonth[key] ?: 0.0) + (record.serviceCost.toDoubleOrNull() ?: 0.0)
+            } catch (_: Exception) {}
+        }
+
+        val allKeys = (svcByMonth.keys + fuel.monthlyFuelCost.keys)
+            .toSortedSet(Comparator { a, b ->
+                (sortFmt.parse(a)?.time ?: 0L).compareTo(sortFmt.parse(b)?.time ?: 0L)
+            })
+
+        return allKeys.map { key ->
+            MonthlySpend(
+                label = key,
+                svcAmount = (svcByMonth[key] ?: 0.0).toFloat(),
+                fuelAmount = (fuel.monthlyFuelCost[key] ?: 0.0).toFloat()
+            )
+        }.takeLast(12)
     }
 
     override fun onCleared() {
