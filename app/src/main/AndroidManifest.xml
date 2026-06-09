@@ -39,10 +39,6 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".TripMapActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
             android:name=".PartsWarrantyActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
