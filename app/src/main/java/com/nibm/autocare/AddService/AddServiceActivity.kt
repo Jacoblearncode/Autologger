@@ -512,19 +512,47 @@ class AddServiceActivity : AppCompatActivity() {
         val serviceRef = database.reference.child("users_services")
             .child(userId).child(registrationNumber).child(recordKey)
 
+        if (isEditMode) {
+            writeServiceRecord(serviceRef, serviceData, registrationNumber, recordKey, userId)
+            return
+        }
+
+        // Duplicate check: warn if a record with the same date already exists for this vehicle
+        serviceRef.get().addOnSuccessListener { snapshot ->
+            if (snapshot.exists()) {
+                AlertDialog.Builder(this)
+                    .setTitle("Duplicate Record")
+                    .setMessage("A service record for $date already exists for this vehicle. Replace it?")
+                    .setPositiveButton("Replace") { _, _ ->
+                        writeServiceRecord(serviceRef, serviceData, registrationNumber, recordKey, userId)
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            } else {
+                writeServiceRecord(serviceRef, serviceData, registrationNumber, recordKey, userId)
+            }
+        }.addOnFailureListener {
+            writeServiceRecord(serviceRef, serviceData, registrationNumber, recordKey, userId)
+        }
+    }
+
+    private fun writeServiceRecord(
+        serviceRef: com.google.firebase.database.DatabaseReference,
+        serviceData: HashMap<String, Any>,
+        registrationNumber: String,
+        recordKey: String,
+        userId: String
+    ) {
         serviceRef.setValue(serviceData)
             .addOnSuccessListener {
                 if (!isEditMode) {
-                    // Schedule the next service reminder only for new records
                     val weeklyDistance = vehicleWeeklyDistances[registrationNumber] ?: 0
                     ReminderScheduler.scheduleAfterService(this, registrationNumber, weeklyDistance)
                 }
                 when {
                     uploadedPhotos.isNotEmpty() ->
-                        // New local photos to upload; existing URLs merged inside uploadPhotosToCloudinary
                         uploadPhotosToCloudinary(userId, registrationNumber, recordKey)
                     existingPhotoUrls.isNotEmpty() ->
-                        // Edit with no new photos — preserve the existing Cloudinary URLs
                         savePhotoUrls(userId, registrationNumber, recordKey, existingPhotoUrls)
                     else -> navigateToHome()
                 }

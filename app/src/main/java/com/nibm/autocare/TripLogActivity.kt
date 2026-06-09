@@ -1,6 +1,7 @@
 package com.nibm.autocare
 
 import android.app.DatePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,11 +9,16 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
+import com.nibm.autocare.PdfGenerator
 import com.nibm.autocare.TripLog.TripLogViewModel
 import com.nibm.autocare.TripLog.TripLogViewModelFactory
 import com.nibm.autocare.model.Trip
+import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -29,6 +35,8 @@ class TripLogActivity : AppCompatActivity() {
     private lateinit var tvLongestTrip: TextView
     private lateinit var vehicleRegistration: String
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    private val pdfGenerator by lazy { PdfGenerator(this) }
+    private var currentTrips: List<Trip> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,10 +61,12 @@ class TripLogActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<View>(R.id.btnAddTrip).setOnClickListener { showTripDialog() }
+        findViewById<View>(R.id.btnExportTrips).setOnClickListener { exportCsv() }
     }
 
     private fun observeViewModel() {
         viewModel.trips.observe(this) { trips ->
+            currentTrips = trips
             lvTrips.adapter = TripsAdapter(trips)
             updateSummary(trips)
         }
@@ -64,6 +74,32 @@ class TripLogActivity : AppCompatActivity() {
             if (msg != null) {
                 Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
                 viewModel.clearToast()
+            }
+        }
+    }
+
+    private fun exportCsv() {
+        if (currentTrips.isEmpty()) {
+            Toast.makeText(this, "No trips to export", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val dialog = AlertDialog.Builder(this).setMessage("Generating CSV…").setCancelable(false).create().also { it.show() }
+        lifecycleScope.launch {
+            val (path, ok) = pdfGenerator.generateTripLogCsv(vehicleRegistration, currentTrips)
+            dialog.dismiss()
+            if (ok && path != null) {
+                val file = File(path)
+                val uri = FileProvider.getUriForFile(this@TripLogActivity, "${packageName}.provider", file)
+                startActivity(Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/csv"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    },
+                    "Share ${file.name}"
+                ))
+            } else {
+                Toast.makeText(this@TripLogActivity, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
             }
         }
     }
