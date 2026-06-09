@@ -1,52 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/bg_primary">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvServiceRecords"
+    <!-- Search bar -->
+    <EditText
+        android:id="@+id/etSearchServices"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:clipToPadding="false" />
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        android:background="@color/bg_surface"
+        android:hint="Search by type, date, or notes…"
+        android:textColorHint="@color/text_secondary"
+        android:textColor="@color/text_primary"
+        android:padding="10dp"
+        android:inputType="text"
+        android:imeOptions="actionSearch"
+        android:singleLine="true" />
 
-    <!-- Empty state: shown when there are no service records -->
-    <LinearLayout
-        android:id="@+id/emptyStateServices"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="32dp"
-        android:visibility="gone">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-        <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@drawable/ic_empty_service"
-            android:alpha="0.25"
-            android:contentDescription="No service records" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvServiceRecords"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:clipToPadding="false" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="No service records"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            android:layout_marginTop="16dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tap the Service button below to log the first service for this vehicle"
-            android:textSize="14sp"
-            android:textColor="@color/text_secondary"
+        <!-- Empty state: shown when there are no service records -->
+        <LinearLayout
+            android:id="@+id/emptyStateServices"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
             android:gravity="center"
-            android:layout_marginTop="8dp" />
+            android:padding="32dp"
+            android:visibility="gone">
 
-    </LinearLayout>
+            <ImageView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/ic_empty_service"
+                android:alpha="0.25"
+                android:contentDescription="No service records" />
 
-</FrameLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No service records"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginTop="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tap the Service button below to log the first service for this vehicle"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="center"
+                android:layout_marginTop="8dp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</LinearLayout>

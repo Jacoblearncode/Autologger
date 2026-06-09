@@ -68,6 +68,37 @@ object ReminderScheduler {
         }
     }
 
+    /**
+     * Schedules 30-day and 7-day warning notifications for a replaced part's warranty.
+     * Reuses DocumentExpiryWorker so no new worker class is needed.
+     */
+    fun scheduleWarrantyReminder(
+        context: Context,
+        registration: String,
+        partName: String,
+        warrantyExpiry: String
+    ) {
+        if (warrantyExpiry.isBlank()) return
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val expiry = try { dateFormat.parse(warrantyExpiry) } catch (e: Exception) { return }
+
+        val daysLeft = TimeUnit.MILLISECONDS.toDays(expiry.time - Date().time).toInt()
+
+        val wm = WorkManager.getInstance(context)
+        wm.cancelUniqueWork("warranty_${registration}_${partName}_30d")
+        wm.cancelUniqueWork("warranty_${registration}_${partName}_7d")
+
+        val label = "Warranty: $partName"
+        if (daysLeft > 30) {
+            enqueueDocReminder(context, registration, label, 30, (daysLeft - 30).toLong())
+        }
+        if (daysLeft > 7) {
+            enqueueDocReminder(context, registration, label, 7, (daysLeft - 7).toLong())
+        } else if (daysLeft in 1..7) {
+            enqueueDocReminder(context, registration, label, daysLeft, 0L)
+        }
+    }
+
     // Whichever comes first: mileage estimate or 90 days (3 months)
     private fun calculateDays(kmUntilNext: Int, weeklyDistance: Int): Long {
         val milageDays = if (weeklyDistance > 0) {

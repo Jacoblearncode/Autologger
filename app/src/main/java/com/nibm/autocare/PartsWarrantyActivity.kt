@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.nibm.autocare.Parts.PartsWarrantyViewModel
 import com.nibm.autocare.Parts.PartsWarrantyViewModelFactory
+import com.nibm.autocare.Reminder.ReminderScheduler
 import com.nibm.autocare.model.Part
 import java.text.SimpleDateFormat
 import java.util.*
@@ -101,6 +102,12 @@ class PartsWarrantyActivity : AppCompatActivity() {
                 )
                 // Null partId → push() new node; non-null → update existing
                 viewModel.savePart(existing?.id, data)
+                val expiry = etWarrantyExpiry.text.toString().trim()
+                if (expiry.isNotEmpty()) {
+                    ReminderScheduler.scheduleWarrantyReminder(
+                        this@PartsWarrantyActivity, vehicleRegistration, name, expiry
+                    )
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()

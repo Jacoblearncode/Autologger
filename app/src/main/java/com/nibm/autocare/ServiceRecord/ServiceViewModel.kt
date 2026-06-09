@@ -157,6 +157,19 @@ class ServiceViewModel(
         servicesRef.child(recordId).removeValue()
     }
 
+    fun restoreServiceRecord(record: ServiceRecord) {
+        val data = hashMapOf(
+            "date" to record.date,
+            "odometerReading" to record.odometerReading,
+            "serviceType" to (record.serviceType ?: ""),
+            "serviceCost" to record.serviceCost,
+            "notes" to (record.notes ?: ""),
+            "checkedItems" to (record.checkedItems ?: emptyList<String>()),
+            "photoUrls" to (record.photoUrls ?: emptyList<String>())
+        )
+        servicesRef.child(record.recordId).setValue(data)
+    }
+
     // Returns null for malformed records rather than crashing the whole list load.
     private fun parseServiceRecord(snapshot: DataSnapshot): ServiceRecord? {
         return try {

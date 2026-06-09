@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import com.nibm.autocare.model.FuelLog
 import com.nibm.autocare.model.ServiceRecord
+import com.nibm.autocare.model.Trip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -280,6 +281,38 @@ class PdfGenerator(private val context: Context) {
                         "${log.totalCost.csvEscape()}," +
                         "${log.efficiency.csvEscape()}," +
                         "${log.notes.csvEscape()}\n"
+                    )
+                }
+            }
+            Pair(file.absolutePath, true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair(null, false)
+        }
+    }
+
+    suspend fun generateTripLogCsv(
+        vehicleRegistration: String,
+        trips: List<Trip>
+    ): Pair<String?, Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val fileName = "TripLog_${vehicleRegistration}_$timeStamp.csv"
+            val dir = if (Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED)
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            else context.filesDir
+            val file = File(dir, fileName)
+
+            file.bufferedWriter().use { writer ->
+                writer.write("Date,Purpose,Start Odometer (km),End Odometer (km),Distance (km),Notes\n")
+                trips.forEach { trip ->
+                    writer.write(
+                        "${trip.date.csvEscape()}," +
+                        "${trip.purpose.csvEscape()}," +
+                        "${trip.startOdometer.csvEscape()}," +
+                        "${trip.endOdometer.csvEscape()}," +
+                        "${String.format("%.1f", trip.distance).csvEscape()}," +
+                        "${trip.notes.csvEscape()}\n"
                     )
                 }
             }

@@ -36,6 +36,15 @@
             android:textStyle="bold" />
 
         <ImageButton
+            android:id="@+id/btnExportTrips"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_pdf_download"
+            android:tint="@color/yellow"
+            android:contentDescription="Export trips" />
+
+        <ImageButton
             android:id="@+id/btnAddTrip"
             android:layout_width="40dp"
             android:layout_height="40dp"
