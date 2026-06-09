@@ -169,7 +169,7 @@ class ServiceViewModel(
         val nextServiceKm = if (lastServiceOdo > 0) (lastServiceOdo + 5000) - currentEst else -1.0
 
         val kmRange = if (minAllOdo != Double.MAX_VALUE) currentEst - minAllOdo else 0.0
-        val costPerKm = if (kmRange > 0) "Rs %.2f/km".format((svcTotal + fuel.totalCost) / kmRange) else "—"
+        val costPerKm = if (kmRange > 0) "MYR %.2f/km".format((svcTotal + fuel.totalCost) / kmRange) else "—"
 
         val avgEfficiency = if (fuel.efficiencyLogs.size >= 2) {
             val sorted = fuel.efficiencyLogs.sortedBy { it.first }

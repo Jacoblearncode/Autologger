@@ -75,7 +75,7 @@ class ServiceRecordAdapter(
         fun bind(service: ServiceRecord, position: Int) {
             tvOdometerReading.text = "${service.odometerReading} km"
             tvServiceDate.text = service.date
-            tvServiceCost.text = "Rs ${service.serviceCost}"
+            tvServiceCost.text = "MYR ${service.serviceCost}"
 
             // Optional fields: hide the view entirely when the record has no value.
             service.serviceType?.let {

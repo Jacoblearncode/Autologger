@@ -239,10 +239,10 @@ class FuelLogActivity : AppCompatActivity() {
             vh.tvDate.text = log.date
             vh.tvOdometer.text = "${log.odometer} km"
             vh.tvRegistration.text = log.registrationNumber
-            vh.tvTotalCost.text = if (log.totalCost.isNotBlank()) "Rs ${log.totalCost}" else "—"
+            vh.tvTotalCost.text = if (log.totalCost.isNotBlank()) "MYR ${log.totalCost}" else "—"
             vh.tvLitersSummary.text = "${log.liters} L"
             vh.tvFuelType.text = log.fuelType
-            vh.tvPricePerLiter.text = if (log.pricePerLiter.isNotBlank()) "Rs ${log.pricePerLiter}/L" else "Price not recorded"
+            vh.tvPricePerLiter.text = if (log.pricePerLiter.isNotBlank()) "MYR ${log.pricePerLiter}/L" else "Price not recorded"
 
             if (log.efficiency.isNotBlank()) {
                 vh.tvEfficiency.text = "Efficiency: ${log.efficiency}"

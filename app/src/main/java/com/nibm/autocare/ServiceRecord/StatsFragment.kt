@@ -33,9 +33,9 @@ class StatsFragment : Fragment() {
         // combinedStats is a MediatorLiveData that fires whenever service records or fuel
         // data changes, so the summary updates automatically without any manual refresh.
         viewModel.combinedStats.observe(viewLifecycleOwner) { stats ->
-            view.findViewById<TextView>(R.id.tvSvcTotal).text = "Rs ${fmt(stats.svcTotal)}"
-            view.findViewById<TextView>(R.id.tvFuelTotal).text = "Rs ${fmt(stats.fuelTotal)}"
-            view.findViewById<TextView>(R.id.tvCombinedTotal).text = "Rs ${fmt(stats.combinedTotal)}"
+            view.findViewById<TextView>(R.id.tvSvcTotal).text = "MYR ${fmt(stats.svcTotal)}"
+            view.findViewById<TextView>(R.id.tvFuelTotal).text = "MYR ${fmt(stats.fuelTotal)}"
+            view.findViewById<TextView>(R.id.tvCombinedTotal).text = "MYR ${fmt(stats.combinedTotal)}"
             view.findViewById<TextView>(R.id.tvRecordCount).text = "${stats.recordCount}"
             view.findViewById<TextView>(R.id.tvAvgEfficiency).text = stats.avgEfficiency
             view.findViewById<TextView>(R.id.tvCostPerKm).text = stats.costPerKm

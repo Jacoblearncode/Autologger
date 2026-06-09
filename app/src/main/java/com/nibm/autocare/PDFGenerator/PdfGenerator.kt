@@ -93,7 +93,7 @@ class PdfGenerator(private val context: Context) {
 
         // Add service cost
         document.add(
-            Paragraph("Cost: Rs. ${record.serviceCost}")
+            Paragraph("Cost: MYR ${record.serviceCost}")
                 .setFontSize(12f)
         )
 
@@ -198,7 +198,7 @@ class PdfGenerator(private val context: Context) {
             fuelLogs.forEach { log ->
                 document.add(Paragraph("Date: ${log.date}  |  ${log.registrationNumber}").setBold().setFontSize(13f))
                 document.add(Paragraph("Odometer: ${log.odometer} km  |  Fuel: ${log.liters} L  |  Type: ${log.fuelType}").setFontSize(11f))
-                document.add(Paragraph("Price: Rs ${log.pricePerLiter}/L  |  Total: Rs ${log.totalCost}").setFontSize(11f))
+                document.add(Paragraph("Price: MYR ${log.pricePerLiter}/L  |  Total: MYR ${log.totalCost}").setFontSize(11f))
                 if (log.efficiency.isNotBlank()) document.add(Paragraph("Efficiency: ${log.efficiency}").setFontSize(11f))
                 if (log.notes.isNotBlank()) document.add(Paragraph("Notes: ${log.notes}").setFontSize(11f).setItalic())
                 document.add(Paragraph("─────────────────────────────────────────").setFontSize(9f).setFontColor(ColorConstants.GRAY))
@@ -209,7 +209,7 @@ class PdfGenerator(private val context: Context) {
 
             document.add(Paragraph("\n"))
             document.add(
-                Paragraph("Total: ${fuelLogs.size} fill-ups  |  ${String.format("%.1f", totalLiters)} L  |  Rs ${String.format("%,.0f", totalCost)}")
+                Paragraph("Total: ${fuelLogs.size} fill-ups  |  ${String.format("%.1f", totalLiters)} L  |  MYR ${String.format("%,.0f", totalCost)}")
                     .setBold().setFontSize(13f).setTextAlignment(TextAlignment.CENTER)
             )
 
@@ -234,7 +234,7 @@ class PdfGenerator(private val context: Context) {
             val file = File(dir, fileName)
 
             file.bufferedWriter().use { writer ->
-                writer.write("Date,Odometer (km),Cost (Rs),Service Type,Services Performed,Notes\n")
+                writer.write("Date,Odometer (km),Cost (MYR),Service Type,Services Performed,Notes\n")
                 serviceRecords.forEach { record ->
                     val services = record.checkedItems?.joinToString("; ")?.csvEscape() ?: ""
                     writer.write(
@@ -268,7 +268,7 @@ class PdfGenerator(private val context: Context) {
             val file = File(dir, fileName)
 
             file.bufferedWriter().use { writer ->
-                writer.write("Date,Vehicle,Odometer (km),Liters,Fuel Type,Price/L (Rs),Total Cost (Rs),Efficiency,Notes\n")
+                writer.write("Date,Vehicle,Odometer (km),Liters,Fuel Type,Price/L (MYR),Total Cost (MYR),Efficiency,Notes\n")
                 fuelLogs.forEach { log ->
                     writer.write(
                         "${log.date.csvEscape()}," +
