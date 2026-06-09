@@ -2,6 +2,7 @@ package com.nibm.autocare.Reminder
 
 import android.content.Context
 import androidx.work.*
+import com.nibm.autocare.SettingsManager
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -15,7 +16,8 @@ object ReminderScheduler {
         currentMileage: Int,
         weeklyDistance: Int
     ) {
-        val kmUntilNext = if (currentMileage % 5000 == 0) 5000 else 5000 - (currentMileage % 5000)
+        val interval = SettingsManager.getServiceInterval(context)
+        val kmUntilNext = if (currentMileage % interval == 0) interval else interval - (currentMileage % interval)
         val days = calculateDays(kmUntilNext, weeklyDistance)
         enqueue(context, registration, days)
     }
@@ -26,7 +28,8 @@ object ReminderScheduler {
         registration: String,
         weeklyDistance: Int
     ) {
-        val days = calculateDays(kmUntilNext = 5000, weeklyDistance = weeklyDistance)
+        val interval = SettingsManager.getServiceInterval(context)
+        val days = calculateDays(kmUntilNext = interval, weeklyDistance = weeklyDistance)
         enqueue(context, registration, days)
     }
 
@@ -52,18 +55,18 @@ object ReminderScheduler {
             else -> field.replaceFirstChar { it.uppercase() }
         }
 
-        // Cancel any existing reminders for this doc before scheduling new ones
+        val leadDays = SettingsManager.getNotifDaysBefore(context)
+
         val wm = WorkManager.getInstance(context)
-        wm.cancelUniqueWork("doc_${registration}_${docLabel}_30d")
+        wm.cancelUniqueWork("doc_${registration}_${docLabel}_${leadDays}d")
         wm.cancelUniqueWork("doc_${registration}_${docLabel}_7d")
 
-        if (daysLeft > 30) {
-            enqueueDocReminder(context, registration, docLabel, 30, (daysLeft - 30).toLong())
+        if (daysLeft > leadDays) {
+            enqueueDocReminder(context, registration, docLabel, leadDays, (daysLeft - leadDays).toLong())
         }
         if (daysLeft > 7) {
             enqueueDocReminder(context, registration, docLabel, 7, (daysLeft - 7).toLong())
         } else if (daysLeft in 1..7) {
-            // Already within the 7-day window — fire a same-day notification
             enqueueDocReminder(context, registration, docLabel, daysLeft, 0L)
         }
     }
@@ -84,13 +87,14 @@ object ReminderScheduler {
 
         val daysLeft = TimeUnit.MILLISECONDS.toDays(expiry.time - Date().time).toInt()
 
+        val leadDays = SettingsManager.getNotifDaysBefore(context)
         val wm = WorkManager.getInstance(context)
-        wm.cancelUniqueWork("warranty_${registration}_${partName}_30d")
+        wm.cancelUniqueWork("warranty_${registration}_${partName}_${leadDays}d")
         wm.cancelUniqueWork("warranty_${registration}_${partName}_7d")
 
         val label = "Warranty: $partName"
-        if (daysLeft > 30) {
-            enqueueDocReminder(context, registration, label, 30, (daysLeft - 30).toLong())
+        if (daysLeft > leadDays) {
+            enqueueDocReminder(context, registration, label, leadDays, (daysLeft - leadDays).toLong())
         }
         if (daysLeft > 7) {
             enqueueDocReminder(context, registration, label, 7, (daysLeft - 7).toLong())

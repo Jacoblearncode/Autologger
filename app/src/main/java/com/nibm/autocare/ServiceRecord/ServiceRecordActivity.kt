@@ -21,6 +21,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.google.firebase.auth.FirebaseAuth
 import com.nibm.autocare.AddServiceActivity
 import com.nibm.autocare.FuelLogActivity
+import com.nibm.autocare.SettingsManager
 import com.nibm.autocare.HomeActivity
 import com.nibm.autocare.PartsWarrantyActivity
 import com.nibm.autocare.PdfGenerator
@@ -58,8 +59,9 @@ class ServiceRecordActivity : AppCompatActivity() {
         pdfGenerator = PdfGenerator(this)
 
         // Create ViewModel before Fragments are attached so they can retrieve it
+        val interval = SettingsManager.getServiceInterval(this)
         viewModel = ViewModelProvider(
-            this, ServiceViewModelFactory(userId, vehicleRegistration)
+            this, ServiceViewModelFactory(userId, vehicleRegistration, interval)
         )[ServiceViewModel::class.java]
 
         findViewById<TextView>(R.id.tvAppName).text = "Services for $vehicleRegistration"

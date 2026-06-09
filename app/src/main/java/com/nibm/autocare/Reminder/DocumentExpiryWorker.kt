@@ -26,6 +26,13 @@ class DocumentExpiryWorker(
         val docType = inputData.getString(KEY_DOC_TYPE) ?: return Result.failure()
         val daysLeft = inputData.getInt(KEY_DAYS_LEFT, 0)
 
+        val isWarranty = docType.startsWith("Warranty:")
+        val notifOn = if (isWarranty)
+            com.nibm.autocare.SettingsManager.isWarrantyNotifEnabled(context)
+        else
+            com.nibm.autocare.SettingsManager.isDocNotifEnabled(context)
+        if (!notifOn) return Result.success()
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     context, Manifest.permission.POST_NOTIFICATIONS

@@ -23,7 +23,8 @@ import java.util.Locale
  */
 class ServiceViewModel(
     private val userId: String,
-    val vehicleRegistration: String
+    val vehicleRegistration: String,
+    private val serviceIntervalKm: Int = 5000
 ) : ViewModel() {
 
     private val database = FirebaseDatabase.getInstance()
@@ -254,10 +255,10 @@ class ServiceViewModel(
             if (minSvcOdo == Double.MAX_VALUE) Double.MAX_VALUE else minSvcOdo
         )
         val currentEst = maxOf(fuel.maxOdometer, lastServiceOdo)
-        val nextServiceKm = if (lastServiceOdo > 0) (lastServiceOdo + 5000) - currentEst else -1.0
+        val nextServiceKm = if (lastServiceOdo > 0) (lastServiceOdo + serviceIntervalKm) - currentEst else -1.0
 
         val kmRange = if (minAllOdo != Double.MAX_VALUE) currentEst - minAllOdo else 0.0
-        val costPerKm = if (kmRange > 0) "MYR %.2f/km".format((svcTotal + fuel.totalCost) / kmRange) else "—"
+        val costPerKm = if (kmRange > 0) "%.2f/km".format((svcTotal + fuel.totalCost) / kmRange) else "—"
 
         val avgEfficiency = if (fuel.efficiencyLogs.size >= 2) {
             val sorted = fuel.efficiencyLogs.sortedBy { it.first }
@@ -336,12 +337,13 @@ class ServiceViewModel(
  */
 class ServiceViewModelFactory(
     private val userId: String,
-    private val vehicleRegistration: String
+    private val vehicleRegistration: String,
+    private val serviceIntervalKm: Int = 5000
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ServiceViewModel::class.java)) {
-            return ServiceViewModel(userId, vehicleRegistration) as T
+            return ServiceViewModel(userId, vehicleRegistration, serviceIntervalKm) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }

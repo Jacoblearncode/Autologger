@@ -24,6 +24,8 @@ class ServiceReminderWorker(
     override fun doWork(): Result {
         val registration = inputData.getString(KEY_REGISTRATION) ?: return Result.failure()
 
+        if (!com.nibm.autocare.SettingsManager.isServiceNotifEnabled(context)) return Result.success()
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     context, Manifest.permission.POST_NOTIFICATIONS

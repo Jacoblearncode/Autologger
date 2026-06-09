@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.nibm.autocare.R
+import com.nibm.autocare.SettingsManager
 import com.nibm.autocare.model.ServiceRecord
 
 /**
@@ -76,7 +77,8 @@ class ServiceRecordAdapter(
         fun bind(service: ServiceRecord, position: Int) {
             tvOdometerReading.text = "${service.odometerReading} km"
             tvServiceDate.text = service.date
-            tvServiceCost.text = "MYR ${service.serviceCost}"
+            val currency = SettingsManager.getCurrency(itemView.context)
+            tvServiceCost.text = "$currency ${service.serviceCost}"
 
             // Optional fields: hide the view entirely when the record has no value.
             service.serviceType?.let {

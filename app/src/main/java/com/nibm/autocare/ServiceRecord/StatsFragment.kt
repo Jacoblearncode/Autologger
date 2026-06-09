@@ -24,6 +24,7 @@ import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.PercentFormatter
 import com.nibm.autocare.R
+import com.nibm.autocare.SettingsManager
 
 class StatsFragment : Fragment() {
 
@@ -48,12 +49,14 @@ class StatsFragment : Fragment() {
         setupPieChart(pieChart)
 
         viewModel.combinedStats.observe(viewLifecycleOwner) { stats ->
-            view.findViewById<TextView>(R.id.tvSvcTotal).text = "MYR ${fmt(stats.svcTotal)}"
-            view.findViewById<TextView>(R.id.tvFuelTotal).text = "MYR ${fmt(stats.fuelTotal)}"
-            view.findViewById<TextView>(R.id.tvCombinedTotal).text = "MYR ${fmt(stats.combinedTotal)}"
+            val cur = SettingsManager.getCurrency(requireContext())
+            view.findViewById<TextView>(R.id.tvSvcTotal).text = "$cur ${fmt(stats.svcTotal)}"
+            view.findViewById<TextView>(R.id.tvFuelTotal).text = "$cur ${fmt(stats.fuelTotal)}"
+            view.findViewById<TextView>(R.id.tvCombinedTotal).text = "$cur ${fmt(stats.combinedTotal)}"
             view.findViewById<TextView>(R.id.tvRecordCount).text = "${stats.recordCount}"
             view.findViewById<TextView>(R.id.tvAvgEfficiency).text = stats.avgEfficiency
-            view.findViewById<TextView>(R.id.tvCostPerKm).text = stats.costPerKm
+            view.findViewById<TextView>(R.id.tvCostPerKm).text =
+                if (stats.costPerKm == "—") "—" else "$cur ${stats.costPerKm}"
 
             val tvNext = view.findViewById<TextView>(R.id.tvNextService)
             when {
