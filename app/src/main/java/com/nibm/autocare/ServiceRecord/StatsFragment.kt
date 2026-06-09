@@ -59,7 +59,7 @@ class StatsFragment : Fragment() {
             when {
                 stats.nextServiceKm < 0 -> {
                     tvNext.text = "—"
-                    tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
+                    tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
                 }
                 stats.nextServiceKm <= 0 -> {
                     tvNext.text = "OVERDUE"

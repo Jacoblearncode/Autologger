@@ -308,6 +308,20 @@ class ServiceViewModel(
         }.takeLast(12)
     }
 
+    private fun computeEfficiencyTrend(fuel: FuelData): List<Pair<String, Float>> {
+        val sorted = fuel.fuelEntries.sortedBy { it.first }
+        val trend = mutableListOf<Pair<String, Float>>()
+        for (i in 1 until sorted.size) {
+            val kmDiff = sorted[i].first - sorted[i - 1].first
+            if (kmDiff > 0 && sorted[i].second > 0) {
+                val efficiency = (kmDiff / sorted[i].second).toFloat()
+                val label = sorted[i].third.take(5).ifEmpty { "#$i" }  // "dd/MM"
+                trend.add(label to efficiency)
+            }
+        }
+        return trend.takeLast(10)
+    }
+
     override fun onCleared() {
         super.onCleared()
         // Remove Firebase listener to stop callbacks after the ViewModel is destroyed.
