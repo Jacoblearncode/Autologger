@@ -46,6 +46,15 @@
             android:textStyle="bold" />
 
         <ImageButton
+            android:id="@+id/btnMapTrip"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_map"
+            android:tint="@color/accent_lime"
+            android:contentDescription="View on map" />
+
+        <ImageButton
             android:id="@+id/btnEditTrip"
             android:layout_width="32dp"
             android:layout_height="32dp"

@@ -188,6 +188,17 @@ class TripLogActivity : AppCompatActivity() {
             tvNotes.text = trip.notes
             tvNotes.visibility = if (trip.notes.isNotEmpty()) View.VISIBLE else View.GONE
 
+            view.findViewById<View>(R.id.btnMapTrip).setOnClickListener {
+                startActivity(Intent(this@TripLogActivity, TripMapActivity::class.java).apply {
+                    putExtra("purpose", trip.purpose)
+                    putExtra("date", trip.date)
+                    putExtra("startOdometer", trip.startOdometer)
+                    putExtra("endOdometer", trip.endOdometer)
+                    putExtra("distance", trip.distance)
+                    putExtra("notes", trip.notes)
+                })
+            }
+
             view.findViewById<View>(R.id.btnEditTrip).setOnClickListener {
                 showTripDialog(trip)
             }
