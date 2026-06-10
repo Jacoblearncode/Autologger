@@ -32,6 +32,14 @@ object SettingsManager {
     fun isWarrantyNotifEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean("notif_warranty", true)
     fun setWarrantyNotif(ctx: Context, on: Boolean) = prefs(ctx).edit().putBoolean("notif_warranty", on).apply()
 
+    // A1 — Biometric unlock
+    fun isBiometricEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean("biometric", false)
+    fun setBiometric(ctx: Context, on: Boolean) = prefs(ctx).edit().putBoolean("biometric", on).apply()
+
+    // U7 — Onboarding seen flag
+    fun isOnboardingSeen(ctx: Context): Boolean = prefs(ctx).getBoolean("onboarding_seen", false)
+    fun setOnboardingSeen(ctx: Context) = prefs(ctx).edit().putBoolean("onboarding_seen", true).apply()
+
     // U5 — Monthly budget (0 = no budget set)
     fun getMonthlyBudget(ctx: Context): Double = java.lang.Double.longBitsToDouble(
         prefs(ctx).getLong("monthly_budget", java.lang.Double.doubleToLongBits(0.0))

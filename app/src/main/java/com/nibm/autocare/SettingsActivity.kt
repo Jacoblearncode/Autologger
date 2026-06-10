@@ -1,17 +1,30 @@
 package com.nibm.autocare
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.Switch
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.bumptech.glide.Glide
+import com.cloudinary.android.MediaManager
+import com.cloudinary.android.callback.ErrorInfo
+import com.cloudinary.android.callback.UploadCallback
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import java.io.ByteArrayOutputStream
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -24,10 +37,129 @@ class SettingsActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
 
+        setupAccount()
         setupTheme()
+        setupSecurity()
         setupNotifications()
         setupVehicle()
         setupDisplay()
+    }
+
+    // ── Account / profile photo (C1) ──────────────────────────────────────────
+
+    private val galleryLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            result.data?.data?.let { uri -> uploadProfilePhoto(uri) }
+        }
+    }
+
+    private fun setupAccount() {
+        val iv = findViewById<ImageView>(R.id.ivProfilePhoto)
+        val tvEmail = findViewById<TextView>(R.id.tvProfileEmail)
+        val tvChange = findViewById<TextView>(R.id.tvChangePhoto)
+
+        val user = FirebaseAuth.getInstance().currentUser
+        tvEmail.text = user?.email ?: "Signed in"
+
+        val uid = user?.uid
+        if (uid != null) {
+            FirebaseDatabase.getInstance().reference
+                .child("users").child(uid).child("profilePhotoUrl")
+                .get().addOnSuccessListener { snap ->
+                    val url = snap.getValue(String::class.java)
+                    if (!url.isNullOrEmpty()) {
+                        Glide.with(this).load(url).circleCrop()
+                            .placeholder(R.drawable.circle_gray_bg).into(iv)
+                    }
+                }
+        }
+
+        val pick = View.OnClickListener {
+            galleryLauncher.launch(
+                android.content.Intent(android.content.Intent.ACTION_PICK).apply { type = "image/*" }
+            )
+        }
+        iv.setOnClickListener(pick)
+        tvChange.setOnClickListener(pick)
+    }
+
+    private fun uploadProfilePhoto(uri: Uri) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val bytes = compressImage(uri) ?: run {
+            Toast.makeText(this, "Could not read image", Toast.LENGTH_SHORT).show(); return
+        }
+        Toast.makeText(this, "Uploading photo…", Toast.LENGTH_SHORT).show()
+
+        MediaManager.get().upload(bytes)
+            .option("folder", "Home/AutoCare/profiles")
+            .option("public_id", "profile_$uid")
+            .callback(object : UploadCallback {
+                override fun onStart(requestId: String) {}
+                override fun onProgress(requestId: String, bytes: Long, total: Long) {}
+                override fun onSuccess(requestId: String, resultData: Map<*, *>) {
+                    val url = resultData["url"]?.toString() ?: return
+                    FirebaseDatabase.getInstance().reference
+                        .child("users").child(uid).child("profilePhotoUrl").setValue(url)
+                    runOnUiThread {
+                        Glide.with(this@SettingsActivity).load(url).circleCrop()
+                            .into(findViewById<ImageView>(R.id.ivProfilePhoto))
+                        Toast.makeText(this@SettingsActivity, "Profile photo updated", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                override fun onError(requestId: String, error: ErrorInfo) {
+                    Log.e("Cloudinary", "Profile upload failed: ${error.description}")
+                    runOnUiThread { Toast.makeText(this@SettingsActivity, "Upload failed", Toast.LENGTH_SHORT).show() }
+                }
+                override fun onReschedule(requestId: String, error: ErrorInfo) {}
+            })
+            .dispatch()
+    }
+
+    private fun compressImage(uri: Uri): ByteArray? {
+        return try {
+            val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, opts) }
+            opts.inSampleSize = run {
+                var sample = 1
+                val h = opts.outHeight
+                val w = opts.outWidth
+                while (h / sample > 512 || w / sample > 512) sample *= 2
+                sample
+            }
+            opts.inJustDecodeBounds = false
+            val bitmap = contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, opts)
+            } ?: return null
+            ByteArrayOutputStream().use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
+                out.toByteArray()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace(); null
+        }
+    }
+
+    // ── Security (A1) ─────────────────────────────────────────────────────────
+
+    @Suppress("DEPRECATION")
+    private fun setupSecurity() {
+        val sw = findViewById<Switch>(R.id.switchBiometric)
+        val status = findViewById<android.widget.TextView>(R.id.tvBiometricStatus)
+        val available = androidx.biometric.BiometricManager.from(this).canAuthenticate(
+            androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
+        ) == androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS
+
+        if (!available) {
+            sw.isEnabled = false
+            sw.isChecked = false
+            status.text = "No fingerprint enrolled on this device"
+            return
+        }
+
+        sw.isChecked = SettingsManager.isBiometricEnabled(this)
+        sw.setOnCheckedChangeListener { _, on -> SettingsManager.setBiometric(this, on) }
     }
 
     // ── Appearance ────────────────────────────────────────────────────────────

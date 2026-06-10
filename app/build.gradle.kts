@@ -94,4 +94,5 @@ dependencies {
 
     implementation ("androidx.recyclerview:recyclerview:1.3.2")
     implementation ("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation ("androidx.biometric:biometric:1.1.0")
 }

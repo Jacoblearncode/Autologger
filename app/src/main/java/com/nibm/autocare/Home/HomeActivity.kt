@@ -324,6 +324,7 @@ class HomeActivity : AppCompatActivity() {
         popupMenu.inflate(R.menu.menu_home)
         popupMenu.setOnMenuItemClickListener { item: MenuItem ->
             when (item.itemId) {
+                R.id.menu_compare -> { startActivity(Intent(this, CompareVehiclesActivity::class.java)); true }
                 R.id.menu_settings -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
                 R.id.menu_logout -> { logout(); true }
                 R.id.menu_delete_account -> { deleteAccount(); true }
