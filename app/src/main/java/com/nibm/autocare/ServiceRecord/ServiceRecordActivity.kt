@@ -55,6 +55,9 @@ class ServiceRecordActivity : AppCompatActivity() {
         setContentView(R.layout.activity_service_record)
 
         val vehicleRegistration = intent.getStringExtra("vehicleRegistration") ?: ""
+        val vehicleBrand = intent.getStringExtra("vehicleBrand") ?: ""
+        val vehicleModel = intent.getStringExtra("vehicleModel") ?: ""
+        val vehicleYear = intent.getStringExtra("vehicleYear") ?: ""
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
         pdfGenerator = PdfGenerator(this)
 
@@ -67,7 +70,7 @@ class ServiceRecordActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvAppName).text = "Services for $vehicleRegistration"
         setupTabs()
         setupNavButtons(vehicleRegistration)
-        setupPdfButton(vehicleRegistration)
+        setupPdfButton(vehicleRegistration, vehicleBrand, vehicleModel, vehicleYear)
     }
 
     private fun setupTabs() {
@@ -111,7 +114,7 @@ class ServiceRecordActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupPdfButton(vehicleRegistration: String) {
+    private fun setupPdfButton(vehicleRegistration: String, brand: String, model: String, year: String) {
         findViewById<View>(R.id.btnDownloadPdf).setOnClickListener {
             val records = viewModel.serviceRecords.value ?: emptyList()
             if (records.isEmpty()) {
@@ -120,9 +123,13 @@ class ServiceRecordActivity : AppCompatActivity() {
             }
             AlertDialog.Builder(this)
                 .setTitle("Export Service Records")
-                .setItems(arrayOf("Export as PDF", "Export as CSV")) { _, which ->
+                .setItems(arrayOf("Service PDF", "Service CSV", "Full Vehicle Report")) { _, which ->
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || hasStoragePermissions()) {
-                        if (which == 0) generatePdf(vehicleRegistration) else generateCsv(vehicleRegistration)
+                        when (which) {
+                            0 -> generatePdf(vehicleRegistration)
+                            1 -> generateCsv(vehicleRegistration)
+                            2 -> generateFullReport(vehicleRegistration, brand, model, year)
+                        }
                     } else {
                         requestStoragePermissions()
                     }
@@ -152,6 +159,25 @@ class ServiceRecordActivity : AppCompatActivity() {
             dialog.dismiss()
             if (ok && path != null) shareFile(path, "text/csv")
             else Toast.makeText(this@ServiceRecordActivity, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun generateFullReport(vehicleRegistration: String, brand: String, model: String, year: String) {
+        val dialog = AlertDialog.Builder(this).setMessage("Generating report...").setCancelable(false).create()
+        dialog.show()
+        lifecycleScope.launch {
+            val records = viewModel.serviceRecords.value ?: emptyList()
+            val fuel = viewModel.fuelData.value
+            val currency = SettingsManager.getCurrency(this@ServiceRecordActivity)
+            val fuelTotal = fuel?.totalCost ?: 0.0
+            val fuelCount = fuel?.efficiencyLogs?.size ?: 0
+            val (path, ok) = pdfGenerator.generateFullReport(
+                vehicleRegistration, brand, model, year,
+                records, currency, fuelTotal, fuelCount
+            )
+            dialog.dismiss()
+            if (ok && path != null) shareFile(path, "application/pdf")
+            else Toast.makeText(this@ServiceRecordActivity, "Failed to generate report", Toast.LENGTH_SHORT).show()
         }
     }
 

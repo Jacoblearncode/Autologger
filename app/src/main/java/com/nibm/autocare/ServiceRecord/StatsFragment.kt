@@ -4,10 +4,15 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.charts.PieChart
@@ -29,11 +34,12 @@ import com.nibm.autocare.SettingsManager
 class StatsFragment : Fragment() {
 
     private lateinit var viewModel: ServiceViewModel
+    private var rootView: View? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View = inflater.inflate(R.layout.fragment_stats, container, false)
+    ): View = inflater.inflate(R.layout.fragment_stats, container, false).also { rootView = it }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -49,44 +55,133 @@ class StatsFragment : Fragment() {
         setupPieChart(pieChart)
 
         viewModel.combinedStats.observe(viewLifecycleOwner) { stats ->
-            val cur = SettingsManager.getCurrency(requireContext())
-            view.findViewById<TextView>(R.id.tvSvcTotal).text = "$cur ${fmt(stats.svcTotal)}"
-            view.findViewById<TextView>(R.id.tvFuelTotal).text = "$cur ${fmt(stats.fuelTotal)}"
-            view.findViewById<TextView>(R.id.tvCombinedTotal).text = "$cur ${fmt(stats.combinedTotal)}"
-            view.findViewById<TextView>(R.id.tvRecordCount).text = "${stats.recordCount}"
-            view.findViewById<TextView>(R.id.tvAvgEfficiency).text = stats.avgEfficiency
-            view.findViewById<TextView>(R.id.tvCostPerKm).text =
-                if (stats.costPerKm == "—") "—" else "$cur ${stats.costPerKm}"
-
-            val tvNext = view.findViewById<TextView>(R.id.tvNextService)
-            when {
-                stats.nextServiceKm < 0 -> {
-                    tvNext.text = "—"
-                    tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
-                }
-                stats.nextServiceKm <= 0 -> {
-                    tvNext.text = "OVERDUE"
-                    tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.red))
-                }
-                stats.nextServiceKm <= 1000 -> {
-                    tvNext.text = "%.0f km".format(stats.nextServiceKm)
-                    tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent_lime))
-                }
-                else -> {
-                    tvNext.text = "%.0f km".format(stats.nextServiceKm)
-                    tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
-                }
-            }
-
+            applyStatsUI(stats, view)
             updatePieChart(pieChart, stats.svcTotal, stats.fuelTotal)
         }
 
         viewModel.monthlySpend.observe(viewLifecycleOwner) { data ->
             updateBarChart(barChart, data)
+            updateAnnualCard(data, view)
+            updateBudgetCard(data, view)
         }
 
         viewModel.efficiencyTrend.observe(viewLifecycleOwner) { data ->
             updateLineChart(lineChart, data)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Re-apply currency when returning from Settings
+        val v = rootView ?: return
+        viewModel.combinedStats.value?.let { applyStatsUI(it, v) }
+        viewModel.monthlySpend.value?.let {
+            updateAnnualCard(it, v)
+            updateBudgetCard(it, v)
+        }
+    }
+
+    private fun applyStatsUI(stats: ServiceViewModel.CombinedStats, view: View) {
+        val cur = SettingsManager.getCurrency(requireContext())
+        view.findViewById<TextView>(R.id.tvSvcTotal).text = "$cur ${fmt(stats.svcTotal)}"
+        view.findViewById<TextView>(R.id.tvFuelTotal).text = "$cur ${fmt(stats.fuelTotal)}"
+        view.findViewById<TextView>(R.id.tvCombinedTotal).text = "$cur ${fmt(stats.combinedTotal)}"
+        view.findViewById<TextView>(R.id.tvRecordCount).text = "${stats.recordCount}"
+        view.findViewById<TextView>(R.id.tvAvgEfficiency).text = stats.avgEfficiency
+        view.findViewById<TextView>(R.id.tvCostPerKm).text =
+            if (stats.costPerKm == "—") "—" else "$cur ${stats.costPerKm}"
+
+        val tvNext = view.findViewById<TextView>(R.id.tvNextService)
+        when {
+            stats.nextServiceKm < 0 -> {
+                tvNext.text = "—"
+                tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+            }
+            stats.nextServiceKm <= 0 -> {
+                tvNext.text = "OVERDUE"
+                tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.red))
+            }
+            stats.nextServiceKm <= 1000 -> {
+                tvNext.text = "%.0f km".format(stats.nextServiceKm)
+                tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent_lime))
+            }
+            else -> {
+                tvNext.text = "%.0f km".format(stats.nextServiceKm)
+                tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
+            }
+        }
+    }
+
+    // M4 — Annual spending breakdown
+    private fun updateAnnualCard(data: List<ServiceViewModel.MonthlySpend>, view: View) {
+        val ll = view.findViewById<LinearLayout>(R.id.llAnnualSpend)
+        ll.removeAllViews()
+        val cur = SettingsManager.getCurrency(requireContext())
+
+        val sortFmt = SimpleDateFormat("MMM yy", Locale.getDefault())
+        val yearlyTotals = data
+            .groupBy { entry ->
+                try { "20${sortFmt.parse(entry.label)?.let {
+                    SimpleDateFormat("yy", Locale.getDefault()).format(it) } ?: "??"}" }
+                catch (_: Exception) { "??" }
+            }
+            .map { (year, months) -> year to months.sumOf { (it.svcAmount + it.fuelAmount).toDouble() } }
+            .sortedByDescending { it.first }
+
+        if (yearlyTotals.isEmpty()) {
+            val tv = TextView(requireContext()).apply { text = "No data yet"; setTextColor(
+                ContextCompat.getColor(requireContext(), R.color.text_secondary)) }
+            ll.addView(tv)
+            return
+        }
+
+        yearlyTotals.forEach { (year, total) ->
+            val row = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, 4, 0, 4)
+            }
+            val tvYear = TextView(requireContext()).apply {
+                text = year
+                textSize = 14f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            val tvAmount = TextView(requireContext()).apply {
+                text = "$cur ${fmt(total)}"
+                textSize = 14f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
+            }
+            row.addView(tvYear)
+            row.addView(tvAmount)
+            ll.addView(row)
+        }
+    }
+
+    // U5 — Monthly budget progress
+    private fun updateBudgetCard(data: List<ServiceViewModel.MonthlySpend>, view: View) {
+        val budget = SettingsManager.getMonthlyBudget(requireContext())
+        val card = view.findViewById<View>(R.id.cardBudget)
+        if (budget <= 0) { card.visibility = View.GONE; return }
+        card.visibility = View.VISIBLE
+
+        val currentLabel = SimpleDateFormat("MMM yy", Locale.getDefault()).format(Date())
+        val spent = data.find { it.label == currentLabel }
+            ?.let { (it.svcAmount + it.fuelAmount).toDouble() } ?: 0.0
+        val cur = SettingsManager.getCurrency(requireContext())
+        val pct = ((spent / budget) * 100).coerceIn(0.0, 100.0).toInt()
+
+        view.findViewById<TextView>(R.id.tvBudgetStatus).text = "$cur ${fmt(spent)} / $cur ${fmt(budget)}"
+        view.findViewById<ProgressBar>(R.id.pbBudget).apply {
+            progress = pct
+            progressTintList = android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(requireContext(), if (pct >= 90) R.color.red else R.color.accent_lime)
+            )
+        }
+        view.findViewById<TextView>(R.id.tvBudgetNote).text = when {
+            pct >= 100 -> "Budget exceeded this month"
+            pct >= 80  -> "$pct% of budget used — approaching limit"
+            else       -> "$pct% of budget used"
         }
     }
 

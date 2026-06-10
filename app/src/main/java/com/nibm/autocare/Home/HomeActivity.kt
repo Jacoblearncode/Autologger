@@ -35,6 +35,7 @@ import com.nibm.autocare.Vehicle.AddVehicleActivity
 import com.nibm.autocare.adapter.VehicleAdapter
 import com.nibm.autocare.model.Vehicle
 import com.nibm.autocare.ServiceRecord.ServiceRecordActivity
+import com.nibm.autocare.SettingsManager
 
 /**
  * Main screen of the app, displaying the user's vehicle list.
@@ -110,6 +111,7 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        vehicleAdapter.setDefaultVehicle(SettingsManager.getDefaultVehicle(this))
         tvOfflineBanner.visibility = if (isConnected()) View.GONE else View.VISIBLE
         networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
@@ -145,6 +147,9 @@ class HomeActivity : AppCompatActivity() {
             onItemClick = { vehicle ->
                 startActivity(Intent(this, ServiceRecordActivity::class.java).apply {
                     putExtra("vehicleRegistration", vehicle.registrationNumber)
+                    putExtra("vehicleBrand", vehicle.brand)
+                    putExtra("vehicleModel", vehicle.model)
+                    putExtra("vehicleYear", vehicle.manufacturedYear)
                 })
             },
             onItemLongClick = { vehicle -> confirmDelete(vehicle) },
@@ -195,6 +200,63 @@ class HomeActivity : AppCompatActivity() {
         viewModel.lastServiceOdometers.observe(this) { scores ->
             vehicleAdapter.submitHealthScores(scores)
         }
+
+        viewModel.vehicles.observe(this) { vehicles ->
+            if (vehicles.isNotEmpty()) loadActivityFeed(userId)
+        }
+    }
+
+    private fun loadActivityFeed(userId: String) {
+        val card = findViewById<android.view.View>(R.id.cardRecentActivity)
+        val ll = findViewById<android.widget.LinearLayout>(R.id.llActivityFeed)
+        val db = com.google.firebase.database.FirebaseDatabase.getInstance()
+
+        data class FeedItem(val label: String, val date: String)
+        val items = mutableListOf<FeedItem>()
+
+        db.reference.child("users_services").child(userId)
+            .get().addOnSuccessListener { snap ->
+                for (vehicleSnap in snap.children) {
+                    val reg = vehicleSnap.key ?: continue
+                    for (record in vehicleSnap.children) {
+                        val date = record.child("date").getValue(String::class.java) ?: continue
+                        val type = record.child("serviceType").getValue(String::class.java) ?: "Service"
+                        items.add(FeedItem("🔧 $type — $reg", date))
+                    }
+                }
+                db.reference.child("users_fuel_logs").child(userId)
+                    .get().addOnSuccessListener { fuelSnap ->
+                        for (entry in fuelSnap.children) {
+                            val date = entry.child("date").getValue(String::class.java) ?: continue
+                            val reg = entry.child("registrationNumber").getValue(String::class.java) ?: continue
+                            items.add(FeedItem("⛽ Fuel log — $reg", date))
+                        }
+                        val recent = items.sortedByDescending { it.date }.take(5)
+                        if (recent.isEmpty()) return@addOnSuccessListener
+                        ll.removeAllViews()
+                        recent.forEach { item ->
+                            val row = android.widget.LinearLayout(this).apply {
+                                orientation = android.widget.LinearLayout.HORIZONTAL
+                                setPadding(0, 4, 0, 4)
+                            }
+                            val tvLabel = android.widget.TextView(this).apply {
+                                text = item.label
+                                textSize = 12f
+                                setTextColor(androidx.core.content.ContextCompat.getColor(this@HomeActivity, R.color.text_primary))
+                                layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                            }
+                            val tvDate = android.widget.TextView(this).apply {
+                                text = item.date
+                                textSize = 11f
+                                setTextColor(androidx.core.content.ContextCompat.getColor(this@HomeActivity, R.color.text_secondary))
+                            }
+                            row.addView(tvLabel)
+                            row.addView(tvDate)
+                            ll.addView(row)
+                        }
+                        card.visibility = android.view.View.VISIBLE
+                    }
+            }
     }
 
     private fun updateEmptyState(list: List<Vehicle>, isSearching: Boolean) {

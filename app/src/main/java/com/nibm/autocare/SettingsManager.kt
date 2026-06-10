@@ -32,5 +32,12 @@ object SettingsManager {
     fun isWarrantyNotifEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean("notif_warranty", true)
     fun setWarrantyNotif(ctx: Context, on: Boolean) = prefs(ctx).edit().putBoolean("notif_warranty", on).apply()
 
+    // U5 — Monthly budget (0 = no budget set)
+    fun getMonthlyBudget(ctx: Context): Double = java.lang.Double.longBitsToDouble(
+        prefs(ctx).getLong("monthly_budget", java.lang.Double.doubleToLongBits(0.0))
+    )
+    fun setMonthlyBudget(ctx: Context, amount: Double) = prefs(ctx).edit()
+        .putLong("monthly_budget", java.lang.Double.doubleToLongBits(amount)).apply()
+
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }

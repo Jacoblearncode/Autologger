@@ -323,6 +323,79 @@ class PdfGenerator(private val context: Context) {
         }
     }
 
+    // P2 — Full vehicle report PDF
+    suspend fun generateFullReport(
+        vehicleRegistration: String,
+        brand: String,
+        model: String,
+        year: String,
+        serviceRecords: List<ServiceRecord>,
+        currency: String,
+        fuelTotal: Double,
+        fuelCount: Int
+    ): Pair<String?, Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val fileName = "FullReport_${vehicleRegistration}_$timeStamp.pdf"
+            val dir = if (Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED)
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            else context.filesDir
+            val file = File(dir, fileName)
+
+            val pdfWriter = PdfWriter(FileOutputStream(file))
+            val pdfDocument = PdfDocument(pdfWriter)
+            val document = Document(pdfDocument)
+
+            // Title
+            document.add(Paragraph("Vehicle Report")
+                .setTextAlignment(TextAlignment.CENTER).setBold().setFontSize(22f))
+            document.add(Paragraph(vehicleRegistration)
+                .setTextAlignment(TextAlignment.CENTER).setBold().setFontSize(18f)
+                .setFontColor(com.itextpdf.kernel.colors.DeviceRgb(92, 171, 0)))
+            document.add(Paragraph("Generated ${SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())}")
+                .setTextAlignment(TextAlignment.CENTER).setFontSize(10f)
+                .setFontColor(ColorConstants.GRAY))
+            document.add(Paragraph("\n"))
+
+            // Vehicle details
+            document.add(Paragraph("VEHICLE DETAILS").setBold().setFontSize(13f)
+                .setFontColor(com.itextpdf.kernel.colors.DeviceRgb(92, 171, 0)))
+            document.add(Paragraph("Brand / Model:  $brand $model").setFontSize(11f))
+            document.add(Paragraph("Year:  $year").setFontSize(11f))
+            document.add(Paragraph("\n"))
+
+            // Financial summary
+            val svcTotal = serviceRecords.sumOf { it.serviceCost.toDoubleOrNull() ?: 0.0 }
+            document.add(Paragraph("FINANCIAL SUMMARY").setBold().setFontSize(13f)
+                .setFontColor(com.itextpdf.kernel.colors.DeviceRgb(92, 171, 0)))
+            document.add(Paragraph("Total service cost:   $currency ${"%,.0f".format(svcTotal)}").setFontSize(11f))
+            document.add(Paragraph("Total fuel cost:   $currency ${"%,.0f".format(fuelTotal)}").setFontSize(11f))
+            document.add(Paragraph("Total ($fuelCount fuel fill-ups + ${serviceRecords.size} services):  $currency ${"%,.0f".format(svcTotal + fuelTotal)}")
+                .setFontSize(11f).setBold())
+            document.add(Paragraph("\n"))
+
+            // Service records
+            document.add(Paragraph("SERVICE RECORDS (${serviceRecords.size})").setBold().setFontSize(13f)
+                .setFontColor(com.itextpdf.kernel.colors.DeviceRgb(92, 171, 0)))
+            serviceRecords.forEach { record ->
+                document.add(Paragraph("${record.date}  |  ${record.odometerReading} km  |  $currency ${record.serviceCost}")
+                    .setBold().setFontSize(11f))
+                record.serviceType?.let { document.add(Paragraph("  Type: $it").setFontSize(10f)) }
+                record.checkedItems?.takeIf { it.isNotEmpty() }?.let {
+                    document.add(Paragraph("  Services: ${it.joinToString(", ")}").setFontSize(10f))
+                }
+                record.notes?.let { document.add(Paragraph("  Notes: $it").setFontSize(10f).setItalic()) }
+                document.add(Paragraph("─────────────────────────────────────────").setFontSize(9f).setFontColor(ColorConstants.GRAY))
+            }
+
+            document.close()
+            Pair(file.absolutePath, true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair(null, false)
+        }
+    }
+
     private fun String.csvEscape(): String {
         return if (contains(',') || contains('"') || contains('\n')) {
             "\"${replace("\"", "\"\"")}\""

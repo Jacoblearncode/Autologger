@@ -326,8 +326,7 @@
             android:background="@color/bg_surface"
             android:orientation="vertical"
             android:padding="16dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="8dp">
+            android:layout_marginTop="12dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -343,6 +342,91 @@
                 android:id="@+id/pieChartCosts"
                 android:layout_width="match_parent"
                 android:layout_height="200dp" />
+
+        </LinearLayout>
+
+        <!-- M4 — Annual spending card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/bg_surface"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ANNUAL SPENDING"
+                android:textColor="@color/accent_lime"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:id="@+id/llAnnualSpend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+        </LinearLayout>
+
+        <!-- U5 — Monthly budget card -->
+        <LinearLayout
+            android:id="@+id/cardBudget"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/bg_surface"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="MONTHLY BUDGET"
+                    android:textColor="@color/accent_lime"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.12" />
+
+                <TextView
+                    android:id="@+id/tvBudgetStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/pbBudget"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:max="100"
+                android:progressTint="@color/accent_lime"
+                android:progressBackgroundTint="@color/gray_300" />
+
+            <TextView
+                android:id="@+id/tvBudgetNote"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
 
         </LinearLayout>
 

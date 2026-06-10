@@ -21,15 +21,26 @@ class VehicleAdapter(
 
     private val items = mutableListOf<Vehicle>()
     private var healthScores: Map<String, Double> = emptyMap()
+    private var defaultVehicle: String = ""
 
     fun submitList(newList: List<Vehicle>) {
         items.clear()
-        items.addAll(newList)
+        items.addAll(if (defaultVehicle.isEmpty()) newList
+                     else newList.sortedWith(compareByDescending { it.registrationNumber == defaultVehicle }))
         notifyDataSetChanged()
     }
 
     fun submitHealthScores(scores: Map<String, Double>) {
         healthScores = scores
+        notifyDataSetChanged()
+    }
+
+    fun setDefaultVehicle(reg: String) {
+        defaultVehicle = reg
+        val sorted = if (reg.isEmpty()) items.toList()
+                     else items.sortedWith(compareByDescending { it.registrationNumber == reg })
+        items.clear()
+        items.addAll(sorted)
         notifyDataSetChanged()
     }
 
@@ -55,7 +66,8 @@ class VehicleAdapter(
         private val tvHealthBadge: TextView = itemView.findViewById(R.id.tvHealthBadge)
 
         fun bind(vehicle: Vehicle) {
-            tvRegistrationNumber.text = vehicle.registrationNumber
+            tvRegistrationNumber.text = if (vehicle.registrationNumber == defaultVehicle)
+                "★ ${vehicle.registrationNumber}" else vehicle.registrationNumber
             tvBrand.text = vehicle.brand
             tvManufacturedYear.text = vehicle.manufacturedYear
             tvModel.text = vehicle.model

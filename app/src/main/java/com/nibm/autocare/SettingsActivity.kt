@@ -6,6 +6,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.EditText
 import android.widget.Spinner
 import android.widget.Switch
 import androidx.appcompat.app.AppCompatActivity
@@ -141,6 +142,21 @@ class SettingsActivity : AppCompatActivity() {
                 SettingsManager.setCurrency(this@SettingsActivity, currencies[pos])
             }
             override fun onNothingSelected(p: AdapterView<*>?) {}
+        }
+
+        val etBudget = findViewById<EditText>(R.id.etMonthlyBudget)
+        val savedBudget = SettingsManager.getMonthlyBudget(this)
+        if (savedBudget > 0) etBudget.setText("%.0f".format(savedBudget))
+        etBudget.setOnEditorActionListener { _, _, _ ->
+            val v = etBudget.text.toString().toDoubleOrNull() ?: 0.0
+            SettingsManager.setMonthlyBudget(this, v)
+            false
+        }
+        etBudget.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                val v = etBudget.text.toString().toDoubleOrNull() ?: 0.0
+                SettingsManager.setMonthlyBudget(this, v)
+            }
         }
     }
 }
