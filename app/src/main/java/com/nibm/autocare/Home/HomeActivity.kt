@@ -344,6 +344,18 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun deleteAccount() {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Account")
+            .setMessage(
+                "This will permanently delete your account and ALL data including vehicles, " +
+                "service records, and fuel logs. This cannot be undone.\n\nAre you sure?"
+            )
+            .setPositiveButton("Delete Permanently") { _, _ -> performDeleteAccount() }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun performDeleteAccount() {
         val currentUser = FirebaseAuth.getInstance().currentUser ?: run {
             Toast.makeText(this, "No user logged in", Toast.LENGTH_SHORT).show()
             return

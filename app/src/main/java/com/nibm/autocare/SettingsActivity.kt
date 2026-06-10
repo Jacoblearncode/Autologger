@@ -1,9 +1,12 @@
 package com.nibm.autocare
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.AdapterView
@@ -17,7 +20,9 @@ import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import com.bumptech.glide.Glide
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.ErrorInfo
@@ -25,6 +30,7 @@ import com.cloudinary.android.callback.UploadCallback
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import java.io.ByteArrayOutputStream
+import java.io.File
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -47,11 +53,21 @@ class SettingsActivity : AppCompatActivity() {
 
     // ── Account / profile photo (C1) ──────────────────────────────────────────
 
+    private var cameraImageUri: Uri? = null
+
     private val galleryLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             result.data?.data?.let { uri -> uploadProfilePhoto(uri) }
+        }
+    }
+
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            cameraImageUri?.let { uploadProfilePhoto(it) }
         }
     }
 
@@ -76,13 +92,39 @@ class SettingsActivity : AppCompatActivity() {
                 }
         }
 
-        val pick = View.OnClickListener {
-            galleryLauncher.launch(
-                android.content.Intent(android.content.Intent.ACTION_PICK).apply { type = "image/*" }
-            )
-        }
+        val pick = View.OnClickListener { showPhotoSourceDialog() }
         iv.setOnClickListener(pick)
         tvChange.setOnClickListener(pick)
+    }
+
+    private fun showPhotoSourceDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Profile photo")
+            .setItems(arrayOf("Take photo", "Choose from gallery")) { _, which ->
+                when (which) {
+                    0 -> launchCamera()
+                    1 -> launchGallery()
+                }
+            }
+            .show()
+    }
+
+    private fun launchCamera() {
+        val imageFile = File(
+            getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+            "profile_${System.currentTimeMillis()}.jpg"
+        )
+        val uri = FileProvider.getUriForFile(this, "${packageName}.provider", imageFile)
+        cameraImageUri = uri
+        cameraLauncher.launch(uri)
+    }
+
+    private fun launchGallery() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+        }
+        galleryLauncher.launch(Intent.createChooser(intent, "Select photo"))
     }
 
     private fun uploadProfilePhoto(uri: Uri) {
