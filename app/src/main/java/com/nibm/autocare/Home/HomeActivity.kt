@@ -202,7 +202,8 @@ class HomeActivity : AppCompatActivity() {
         }
 
         viewModel.vehicles.observe(this) { vehicles ->
-            if (vehicles.isNotEmpty()) loadActivityFeed(userId)
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            if (vehicles.isNotEmpty() && uid != null) loadActivityFeed(uid)
         }
     }
 
