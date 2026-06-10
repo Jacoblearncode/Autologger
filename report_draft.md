@@ -939,6 +939,8 @@ Claude Code was used for:
 
 ## References
 
+Appbot. (2022). *Mobile app onboarding: How to reduce churn and increase retention*. Appbot. https://appbot.co/blog/mobile-app-onboarding/
+
 Android Developers. (2023). *Guide to app architecture*. Google. https://developer.android.com/topic/architecture
 
 Android Developers. (2023). *ViewModel overview*. Google. https://developer.android.com/topic/libraries/architecture/viewmodel
