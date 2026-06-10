@@ -11,6 +11,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.nibm.autocare.R
+import com.nibm.autocare.SettingsManager
 import com.nibm.autocare.model.Vehicle
 
 class VehicleAdapter(
@@ -105,12 +106,13 @@ class VehicleAdapter(
         private fun bindHealthBadge(vehicle: Vehicle) {
             val lastServiceOdo = healthScores[vehicle.registrationNumber] ?: -1.0
             val kmSince = if (lastServiceOdo >= 0) vehicle.currentMileage - lastServiceOdo.toInt() else -1
+            val interval = SettingsManager.getServiceInterval(itemView.context)
 
             val (text, colorRes) = when {
-                lastServiceOdo < 0 -> "—" to R.color.gray
-                kmSince >= 5000    -> "OVERDUE" to R.color.red
-                kmSince >= 3000    -> "SOON" to R.color.dark_yellow
-                else               -> "GOOD" to R.color.green
+                lastServiceOdo < 0        -> "—" to R.color.gray
+                kmSince >= interval       -> "OVERDUE" to R.color.red
+                kmSince >= interval * 3 / 5 -> "SOON" to R.color.dark_yellow
+                else                      -> "GOOD" to R.color.green
             }
 
             tvHealthBadge.text = text

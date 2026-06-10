@@ -184,6 +184,8 @@ class HomeActivity : AppCompatActivity() {
             else allVehicles.filter { it.registrationNumber.lowercase().contains(searchQuery) }
             vehicleAdapter.submitList(filtered)
             updateEmptyState(filtered, searchQuery.isNotEmpty())
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            if (allVehicles.isNotEmpty() && uid != null) loadActivityFeed(uid)
         }
 
         viewModel.toastMessage.observe(this) { message ->
@@ -199,11 +201,6 @@ class HomeActivity : AppCompatActivity() {
 
         viewModel.lastServiceOdometers.observe(this) { scores ->
             vehicleAdapter.submitHealthScores(scores)
-        }
-
-        viewModel.vehicles.observe(this) { vehicles ->
-            val uid = FirebaseAuth.getInstance().currentUser?.uid
-            if (vehicles.isNotEmpty() && uid != null) loadActivityFeed(uid)
         }
     }
 
@@ -232,7 +229,10 @@ class HomeActivity : AppCompatActivity() {
                             val reg = entry.child("registrationNumber").getValue(String::class.java) ?: continue
                             items.add(FeedItem("⛽ Fuel log — $reg", date))
                         }
-                        val recent = items.sortedByDescending { it.date }.take(5)
+                        val dateFmt = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                        val recent = items.sortedByDescending {
+                            try { dateFmt.parse(it.date) } catch (_: Exception) { null }
+                        }.take(5)
                         if (recent.isEmpty()) return@addOnSuccessListener
                         ll.removeAllViews()
                         recent.forEach { item ->
@@ -365,7 +365,8 @@ class HomeActivity : AppCompatActivity() {
         val deleteTasks = listOf(
             db.reference.child("users").child(uid).removeValue(),
             db.reference.child("users_services").child(uid).removeValue(),
-            db.reference.child("users_vehicles").child(uid).removeValue()
+            db.reference.child("users_vehicles").child(uid).removeValue(),
+            db.reference.child("users_fuel_logs").child(uid).removeValue()
         )
         com.google.android.gms.tasks.Tasks.whenAll(deleteTasks)
             .addOnSuccessListener {
