@@ -73,6 +73,11 @@ class ServiceRecordActivity : AppCompatActivity() {
         setupPdfButton(vehicleRegistration, vehicleBrand, vehicleModel, vehicleYear)
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.updateServiceInterval(SettingsManager.getServiceInterval(this))
+    }
+
     private fun setupTabs() {
         val pager = findViewById<ViewPager2>(R.id.viewPager)
         pager.adapter = ServicePagerAdapter(this)

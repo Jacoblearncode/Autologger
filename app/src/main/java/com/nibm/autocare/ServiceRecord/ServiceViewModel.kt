@@ -24,7 +24,7 @@ import java.util.Locale
 class ServiceViewModel(
     private val userId: String,
     val vehicleRegistration: String,
-    private val serviceIntervalKm: Int = 5000
+    private var serviceIntervalKm: Int = 5000
 ) : ViewModel() {
 
     private val database = FirebaseDatabase.getInstance()
@@ -202,6 +202,13 @@ class ServiceViewModel(
             // Strip file extension
             withoutVersion.substringBeforeLast(".")
         } catch (_: Exception) { null }
+    }
+
+    fun updateServiceInterval(km: Int) {
+        if (km == serviceIntervalKm) return
+        serviceIntervalKm = km
+        // Re-post current records to trigger MediatorLiveData recompute with new interval
+        _serviceRecords.value = _serviceRecords.value
     }
 
     fun restoreServiceRecord(record: ServiceRecord) {

@@ -10,6 +10,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 
@@ -56,19 +57,24 @@ class CompareVehiclesActivity : AppCompatActivity() {
                 return@addOnSuccessListener
             }
 
-            db.child("users_services").child(uid).get().addOnSuccessListener { svcSnap ->
-                for (reg in regs) {
-                    var cost = 0.0; var count = 0; var maxOdo = 0.0
-                    for (record in svcSnap.child(reg).children) {
-                        cost += record.child("serviceCost").getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
-                        val odo = record.child("odometerReading").getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
-                        if (odo > maxOdo) maxOdo = odo
-                        count++
-                    }
-                    statsByReg[reg] = VehicleStats(cost, count, 0.0, maxOdo)
-                }
+            val svcTask = db.child("users_services").child(uid).get()
+            val fuelTask = db.child("users_fuel_logs").child(uid).get()
+            Tasks.whenAllSuccess<com.google.firebase.database.DataSnapshot>(svcTask, fuelTask)
+                .addOnSuccessListener { results ->
+                    val svcSnap = results[0]
+                    val fuelSnap = results[1]
 
-                db.child("users_fuel_logs").child(uid).get().addOnSuccessListener { fuelSnap ->
+                    for (reg in regs) {
+                        var cost = 0.0; var count = 0; var maxOdo = 0.0
+                        for (record in svcSnap.child(reg).children) {
+                            cost += record.child("serviceCost").getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
+                            val odo = record.child("odometerReading").getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
+                            if (odo > maxOdo) maxOdo = odo
+                            count++
+                        }
+                        statsByReg[reg] = VehicleStats(cost, count, 0.0, maxOdo)
+                    }
+
                     val fuelByReg = mutableMapOf<String, Double>()
                     for (entry in fuelSnap.children) {
                         val reg = entry.child("registrationNumber").getValue(String::class.java) ?: continue
@@ -80,7 +86,6 @@ class CompareVehiclesActivity : AppCompatActivity() {
                     }
                     setupSpinners()
                 }
-            }
         }
     }
 

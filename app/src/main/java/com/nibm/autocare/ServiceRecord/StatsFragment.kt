@@ -34,12 +34,11 @@ import com.nibm.autocare.SettingsManager
 class StatsFragment : Fragment() {
 
     private lateinit var viewModel: ServiceViewModel
-    private var rootView: View? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View = inflater.inflate(R.layout.fragment_stats, container, false).also { rootView = it }
+    ): View = inflater.inflate(R.layout.fragment_stats, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -72,8 +71,7 @@ class StatsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Re-apply currency when returning from Settings
-        val v = rootView ?: return
+        val v = requireView()
         viewModel.combinedStats.value?.let { applyStatsUI(it, v) }
         viewModel.monthlySpend.value?.let {
             updateAnnualCard(it, v)

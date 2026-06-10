@@ -9,6 +9,9 @@ import java.util.concurrent.TimeUnit
 
 object ReminderScheduler {
 
+    // Must match the lead-day options exposed in SettingsActivity spinnerNotifDays
+    private val ALL_LEAD_DAYS = listOf(7, 14, 30, 60)
+
     // Called when a new vehicle is added
     fun scheduleForVehicle(
         context: Context,
@@ -58,8 +61,9 @@ object ReminderScheduler {
         val leadDays = SettingsManager.getNotifDaysBefore(context)
 
         val wm = WorkManager.getInstance(context)
-        wm.cancelUniqueWork("doc_${registration}_${docLabel}_${leadDays}d")
-        wm.cancelUniqueWork("doc_${registration}_${docLabel}_7d")
+        // Cancel all possible previously-scheduled lead-day variants so a settings
+        // change doesn't leave stale jobs from the old lead time firing as duplicates.
+        ALL_LEAD_DAYS.forEach { d -> wm.cancelUniqueWork("doc_${registration}_${docLabel}_${d}d") }
 
         if (daysLeft > leadDays) {
             enqueueDocReminder(context, registration, docLabel, leadDays, (daysLeft - leadDays).toLong())
@@ -89,8 +93,7 @@ object ReminderScheduler {
 
         val leadDays = SettingsManager.getNotifDaysBefore(context)
         val wm = WorkManager.getInstance(context)
-        wm.cancelUniqueWork("warranty_${registration}_${partName}_${leadDays}d")
-        wm.cancelUniqueWork("warranty_${registration}_${partName}_7d")
+        ALL_LEAD_DAYS.forEach { d -> wm.cancelUniqueWork("warranty_${registration}_${partName}_${d}d") }
 
         val label = "Warranty: $partName"
         if (daysLeft > leadDays) {
