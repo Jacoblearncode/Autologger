@@ -1,6 +1,11 @@
 package com.nibm.autocare
 
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -21,6 +26,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.firebase.auth.FirebaseAuth
 import com.nibm.autocare.Authentication.LoginActivity
 import com.nibm.autocare.Home.VehicleViewModel
@@ -29,6 +35,7 @@ import com.nibm.autocare.Vehicle.AddVehicleActivity
 import com.nibm.autocare.adapter.VehicleAdapter
 import com.nibm.autocare.model.Vehicle
 import com.nibm.autocare.ServiceRecord.ServiceRecordActivity
+import com.nibm.autocare.SettingsManager
 
 /**
  * Main screen of the app, displaying the user's vehicle list.
@@ -51,7 +58,12 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var emptyState: View
     private lateinit var tvEmptyTitle: TextView
     private lateinit var tvEmptySubtitle: TextView
+    private lateinit var swipeRefresh: SwipeRefreshLayout
+    private lateinit var tvOfflineBanner: TextView
+    private lateinit var connectivityManager: ConnectivityManager
+    private lateinit var networkCallback: ConnectivityManager.NetworkCallback
     private var searchQuery = ""
+    private var feedLoaded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,12 +83,21 @@ class HomeActivity : AppCompatActivity() {
         emptyState = findViewById(R.id.emptyStateVehicles)
         tvEmptyTitle = emptyState.findViewById(R.id.tvEmptyTitle)
         tvEmptySubtitle = emptyState.findViewById(R.id.tvEmptySubtitle)
+        tvOfflineBanner = findViewById(R.id.tvOfflineBanner)
+        swipeRefresh = findViewById(R.id.swipeRefreshHome)
+        swipeRefresh.setColorSchemeColors(ContextCompat.getColor(this, R.color.accent_lime))
+        connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         setupRecyclerView()
         setupSearch()
 
         viewModel = ViewModelProvider(this, VehicleViewModelFactory(userId))[VehicleViewModel::class.java]
         observeViewModel()
+
+        swipeRefresh.setOnRefreshListener {
+            feedLoaded = false
+            viewModel.refresh()
+        }
 
         requestNotificationPermissionIfNeeded()
 
@@ -92,6 +113,37 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        vehicleAdapter.setDefaultVehicle(SettingsManager.getDefaultVehicle(this))
+        tvOfflineBanner.visibility = if (isConnected()) View.GONE else View.VISIBLE
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                runOnUiThread { tvOfflineBanner.visibility = View.GONE }
+            }
+            override fun onLost(network: Network) {
+                runOnUiThread { tvOfflineBanner.visibility = View.VISIBLE }
+            }
+        }
+        connectivityManager.registerNetworkCallback(
+            NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build(),
+            networkCallback
+        )
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try { connectivityManager.unregisterNetworkCallback(networkCallback) } catch (_: Exception) {}
+    }
+
+    private fun isConnected(): Boolean {
+        val network = connectivityManager.activeNetwork ?: return false
+        val caps = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
     private fun setupRecyclerView() {
         rvVehicles = findViewById(R.id.rvVehicles)
         rvVehicles.layoutManager = LinearLayoutManager(this)
@@ -99,6 +151,9 @@ class HomeActivity : AppCompatActivity() {
             onItemClick = { vehicle ->
                 startActivity(Intent(this, ServiceRecordActivity::class.java).apply {
                     putExtra("vehicleRegistration", vehicle.registrationNumber)
+                    putExtra("vehicleBrand", vehicle.brand)
+                    putExtra("vehicleModel", vehicle.model)
+                    putExtra("vehicleYear", vehicle.manufacturedYear)
                 })
             },
             onItemLongClick = { vehicle -> confirmDelete(vehicle) },
@@ -133,6 +188,11 @@ class HomeActivity : AppCompatActivity() {
             else allVehicles.filter { it.registrationNumber.lowercase().contains(searchQuery) }
             vehicleAdapter.submitList(filtered)
             updateEmptyState(filtered, searchQuery.isNotEmpty())
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            if (allVehicles.isNotEmpty() && uid != null && !feedLoaded) {
+                feedLoaded = true
+                loadActivityFeed(uid)
+            }
         }
 
         viewModel.toastMessage.observe(this) { message ->
@@ -141,6 +201,77 @@ class HomeActivity : AppCompatActivity() {
                 viewModel.clearToast()
             }
         }
+
+        viewModel.isLoading.observe(this) { loading ->
+            swipeRefresh.isRefreshing = loading
+        }
+
+        viewModel.lastServiceOdometers.observe(this) { scores ->
+            vehicleAdapter.submitHealthScores(scores)
+        }
+    }
+
+    private fun loadActivityFeed(userId: String) {
+        val card = findViewById<View>(R.id.cardRecentActivity)
+        val ll = findViewById<android.widget.LinearLayout>(R.id.llActivityFeed)
+        val db = com.google.firebase.database.FirebaseDatabase.getInstance()
+
+        data class FeedItem(val label: String, val date: String)
+        val items = mutableListOf<FeedItem>()
+
+        db.reference.child("users_services").child(userId)
+            .get().addOnSuccessListener { snap ->
+                for (vehicleSnap in snap.children) {
+                    val reg = vehicleSnap.key ?: continue
+                    for (record in vehicleSnap.children) {
+                        val date = record.child("date").getValue(String::class.java) ?: continue
+                        val type = record.child("serviceType").getValue(String::class.java) ?: "Service"
+                        items.add(FeedItem("🔧 $type — $reg", date))
+                    }
+                }
+                db.reference.child("users_fuel_logs").child(userId)
+                    .get().addOnSuccessListener { fuelSnap ->
+                        for (entry in fuelSnap.children) {
+                            val date = entry.child("date").getValue(String::class.java) ?: continue
+                            val reg = entry.child("registrationNumber").getValue(String::class.java) ?: continue
+                            items.add(FeedItem("⛽ Fuel log — $reg", date))
+                        }
+                        val dateFmt = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                        val recent = items.sortedByDescending {
+                            try { dateFmt.parse(it.date) } catch (_: Exception) { null }
+                        }.take(3)
+                        if (recent.isEmpty()) return@addOnSuccessListener
+                        ll.removeAllViews()
+                        recent.forEach { item ->
+                            val row = android.widget.LinearLayout(this).apply {
+                                orientation = android.widget.LinearLayout.HORIZONTAL
+                                setPadding(0, 4, 0, 4)
+                            }
+                            val tvLabel = android.widget.TextView(this).apply {
+                                text = item.label
+                                textSize = 12f
+                                setTextColor(ContextCompat.getColor(this@HomeActivity, R.color.text_primary))
+                                layoutParams = android.widget.LinearLayout.LayoutParams(
+                                    0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f
+                                )
+                            }
+                            val tvDate = android.widget.TextView(this).apply {
+                                text = item.date
+                                textSize = 11f
+                                setTextColor(ContextCompat.getColor(this@HomeActivity, R.color.text_secondary))
+                            }
+                            row.addView(tvLabel)
+                            row.addView(tvDate)
+                            ll.addView(row)
+                        }
+                        card.visibility = View.VISIBLE
+                        val tvViewAll = findViewById<android.widget.TextView>(R.id.tvViewAllActivity)
+                        tvViewAll.visibility = View.VISIBLE
+                        tvViewAll.setOnClickListener {
+                            startActivity(Intent(this, ActivityHistoryActivity::class.java))
+                        }
+                    }
+            }
     }
 
     private fun updateEmptyState(list: List<Vehicle>, isSearching: Boolean) {
@@ -169,7 +300,6 @@ class HomeActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 searchQuery = s?.toString()?.trim()?.lowercase() ?: ""
-                // Re-filter current list through the observer
                 val current = viewModel.vehicles.value ?: emptyList()
                 val filtered = if (searchQuery.isEmpty()) current
                 else current.filter { it.registrationNumber.lowercase().contains(searchQuery) }
@@ -207,6 +337,9 @@ class HomeActivity : AppCompatActivity() {
         popupMenu.inflate(R.menu.menu_home)
         popupMenu.setOnMenuItemClickListener { item: MenuItem ->
             when (item.itemId) {
+                R.id.menu_activity_history -> { startActivity(Intent(this, ActivityHistoryActivity::class.java)); true }
+                R.id.menu_compare -> { startActivity(Intent(this, CompareVehiclesActivity::class.java)); true }
+                R.id.menu_settings -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
                 R.id.menu_logout -> { logout(); true }
                 R.id.menu_delete_account -> { deleteAccount(); true }
                 else -> false
@@ -225,6 +358,18 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun deleteAccount() {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Account")
+            .setMessage(
+                "This will permanently delete your account and ALL data including vehicles, " +
+                "service records, and fuel logs. This cannot be undone.\n\nAre you sure?"
+            )
+            .setPositiveButton("Delete Permanently") { _, _ -> performDeleteAccount() }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun performDeleteAccount() {
         val currentUser = FirebaseAuth.getInstance().currentUser ?: run {
             Toast.makeText(this, "No user logged in", Toast.LENGTH_SHORT).show()
             return
@@ -234,7 +379,8 @@ class HomeActivity : AppCompatActivity() {
         val deleteTasks = listOf(
             db.reference.child("users").child(uid).removeValue(),
             db.reference.child("users_services").child(uid).removeValue(),
-            db.reference.child("users_vehicles").child(uid).removeValue()
+            db.reference.child("users_vehicles").child(uid).removeValue(),
+            db.reference.child("users_fuel_logs").child(uid).removeValue()
         )
         com.google.android.gms.tasks.Tasks.whenAll(deleteTasks)
             .addOnSuccessListener {

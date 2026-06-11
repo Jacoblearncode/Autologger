@@ -2,6 +2,7 @@ package com.nibm.autocare
 
 import android.app.DatePickerDialog
 import android.os.Bundle
+import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -25,10 +26,18 @@ class VehicleDocumentsActivity : AppCompatActivity() {
 
     private lateinit var tvInsuranceExpiry: TextView
     private lateinit var tvInsuranceCountdown: TextView
+    private lateinit var tvInsuranceBadge: TextView
+    private lateinit var vStripeInsurance: View
+
     private lateinit var tvRoadTaxExpiry: TextView
     private lateinit var tvRoadTaxCountdown: TextView
+    private lateinit var tvRoadTaxBadge: TextView
+    private lateinit var vStripeRoadTax: View
+
     private lateinit var tvFitnessExpiry: TextView
     private lateinit var tvFitnessCountdown: TextView
+    private lateinit var tvFitnessBadge: TextView
+    private lateinit var vStripeFitness: View
 
     private lateinit var docsRef: com.google.firebase.database.DatabaseReference
 
@@ -39,12 +48,22 @@ class VehicleDocumentsActivity : AppCompatActivity() {
         vehicleRegistration = intent.getStringExtra("vehicleRegistration") ?: ""
         findViewById<TextView>(R.id.tvAppName).text = "Documents — $vehicleRegistration"
 
-        tvInsuranceExpiry = findViewById(R.id.tvInsuranceExpiry)
+        findViewById<ImageButton>(R.id.btnBackDocs).setOnClickListener { finish() }
+
+        tvInsuranceExpiry    = findViewById(R.id.tvInsuranceExpiry)
         tvInsuranceCountdown = findViewById(R.id.tvInsuranceCountdown)
-        tvRoadTaxExpiry = findViewById(R.id.tvRoadTaxExpiry)
-        tvRoadTaxCountdown = findViewById(R.id.tvRoadTaxCountdown)
-        tvFitnessExpiry = findViewById(R.id.tvFitnessExpiry)
-        tvFitnessCountdown = findViewById(R.id.tvFitnessCountdown)
+        tvInsuranceBadge     = findViewById(R.id.tvInsuranceBadge)
+        vStripeInsurance     = findViewById(R.id.stripeInsurance)
+
+        tvRoadTaxExpiry      = findViewById(R.id.tvRoadTaxExpiry)
+        tvRoadTaxCountdown   = findViewById(R.id.tvRoadTaxCountdown)
+        tvRoadTaxBadge       = findViewById(R.id.tvRoadTaxBadge)
+        vStripeRoadTax       = findViewById(R.id.stripeRoadTax)
+
+        tvFitnessExpiry      = findViewById(R.id.tvFitnessExpiry)
+        tvFitnessCountdown   = findViewById(R.id.tvFitnessCountdown)
+        tvFitnessBadge       = findViewById(R.id.tvFitnessBadge)
+        vStripeFitness       = findViewById(R.id.stripeFitness)
 
         val uid = auth.currentUser?.uid ?: return
         docsRef = database.reference
@@ -55,32 +74,38 @@ class VehicleDocumentsActivity : AppCompatActivity() {
         loadDocuments()
 
         findViewById<ImageButton>(R.id.btnEditInsurance).setOnClickListener {
-            showDatePicker("insurance", tvInsuranceExpiry, tvInsuranceCountdown)
+            showDatePicker("insurance", tvInsuranceExpiry, tvInsuranceCountdown, tvInsuranceBadge, vStripeInsurance)
         }
         findViewById<ImageButton>(R.id.btnDeleteInsurance).setOnClickListener {
-            confirmClear("insurance", tvInsuranceExpiry, tvInsuranceCountdown)
+            confirmClear("insurance", tvInsuranceExpiry, tvInsuranceCountdown, tvInsuranceBadge, vStripeInsurance)
         }
         findViewById<ImageButton>(R.id.btnEditRoadTax).setOnClickListener {
-            showDatePicker("road_tax", tvRoadTaxExpiry, tvRoadTaxCountdown)
+            showDatePicker("road_tax", tvRoadTaxExpiry, tvRoadTaxCountdown, tvRoadTaxBadge, vStripeRoadTax)
         }
         findViewById<ImageButton>(R.id.btnDeleteRoadTax).setOnClickListener {
-            confirmClear("road_tax", tvRoadTaxExpiry, tvRoadTaxCountdown)
+            confirmClear("road_tax", tvRoadTaxExpiry, tvRoadTaxCountdown, tvRoadTaxBadge, vStripeRoadTax)
         }
         findViewById<ImageButton>(R.id.btnEditFitness).setOnClickListener {
-            showDatePicker("fitness", tvFitnessExpiry, tvFitnessCountdown)
+            showDatePicker("fitness", tvFitnessExpiry, tvFitnessCountdown, tvFitnessBadge, vStripeFitness)
         }
         findViewById<ImageButton>(R.id.btnDeleteFitness).setOnClickListener {
-            confirmClear("fitness", tvFitnessExpiry, tvFitnessCountdown)
+            confirmClear("fitness", tvFitnessExpiry, tvFitnessCountdown, tvFitnessBadge, vStripeFitness)
         }
     }
 
-    private fun confirmClear(field: String, tvDate: TextView, tvCountdown: TextView) {
+    private fun confirmClear(
+        field: String,
+        tvDate: TextView,
+        tvCountdown: TextView,
+        tvBadge: TextView,
+        vStripe: View
+    ) {
         AlertDialog.Builder(this)
             .setTitle("Clear Date")
             .setMessage("Remove the saved expiry date for this document?")
             .setPositiveButton("Clear") { _, _ ->
                 docsRef.child(field).removeValue()
-                    .addOnSuccessListener { updateCard(null, tvDate, tvCountdown) }
+                    .addOnSuccessListener { updateCard(null, tvDate, tvCountdown, tvBadge, vStripe) }
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -89,19 +114,29 @@ class VehicleDocumentsActivity : AppCompatActivity() {
     private fun loadDocuments() {
         docsRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                updateCard(snapshot.child("insurance").getValue(String::class.java), tvInsuranceExpiry, tvInsuranceCountdown)
-                updateCard(snapshot.child("road_tax").getValue(String::class.java), tvRoadTaxExpiry, tvRoadTaxCountdown)
-                updateCard(snapshot.child("fitness").getValue(String::class.java), tvFitnessExpiry, tvFitnessCountdown)
+                updateCard(snapshot.child("insurance").getValue(String::class.java),
+                    tvInsuranceExpiry, tvInsuranceCountdown, tvInsuranceBadge, vStripeInsurance)
+                updateCard(snapshot.child("road_tax").getValue(String::class.java),
+                    tvRoadTaxExpiry, tvRoadTaxCountdown, tvRoadTaxBadge, vStripeRoadTax)
+                updateCard(snapshot.child("fitness").getValue(String::class.java),
+                    tvFitnessExpiry, tvFitnessCountdown, tvFitnessBadge, vStripeFitness)
             }
             override fun onCancelled(error: DatabaseError) {}
         })
     }
 
-    private fun updateCard(dateStr: String?, tvDate: TextView, tvCountdown: TextView) {
+    private fun updateCard(
+        dateStr: String?,
+        tvDate: TextView,
+        tvCountdown: TextView,
+        tvBadge: TextView,
+        vStripe: View
+    ) {
         if (dateStr.isNullOrEmpty()) {
             tvDate.text = "Not set"
             tvDate.setTextColor(ContextCompat.getColor(this, R.color.gray))
             tvCountdown.text = ""
+            applyBadge(tvBadge, vStripe, BadgeState.NOT_SET)
             return
         }
 
@@ -118,25 +153,50 @@ class VehicleDocumentsActivity : AppCompatActivity() {
                     tvDate.setTextColor(ContextCompat.getColor(this, R.color.red))
                     tvCountdown.text = "Expired ${-days} day${if (-days == 1L) "" else "s"} ago"
                     tvCountdown.setTextColor(ContextCompat.getColor(this, R.color.red))
+                    applyBadge(tvBadge, vStripe, BadgeState.EXPIRED)
                 }
                 days <= 30 -> {
                     tvDate.setTextColor(ContextCompat.getColor(this, R.color.dark_yellow))
                     tvCountdown.text = "Expires in $days day${if (days == 1L) "" else "s"}"
                     tvCountdown.setTextColor(ContextCompat.getColor(this, R.color.dark_yellow))
+                    applyBadge(tvBadge, vStripe, BadgeState.EXPIRING)
                 }
                 else -> {
                     tvDate.setTextColor(ContextCompat.getColor(this, R.color.green))
                     tvCountdown.text = "$days days remaining"
                     tvCountdown.setTextColor(ContextCompat.getColor(this, R.color.green))
+                    applyBadge(tvBadge, vStripe, BadgeState.VALID)
                 }
             }
         } catch (e: Exception) {
             tvDate.setTextColor(ContextCompat.getColor(this, R.color.gray))
             tvCountdown.text = ""
+            applyBadge(tvBadge, vStripe, BadgeState.NOT_SET)
         }
     }
 
-    private fun showDatePicker(field: String, tvDate: TextView, tvCountdown: TextView) {
+    private enum class BadgeState { VALID, EXPIRING, EXPIRED, NOT_SET }
+
+    private fun applyBadge(tvBadge: TextView, vStripe: View, state: BadgeState) {
+        val (text, badgeDrawable, textColorRes, stripeColorRes) = when (state) {
+            BadgeState.VALID     -> arrayOf("VALID",    R.drawable.bg_badge_valid,    R.color.green,       R.color.green)
+            BadgeState.EXPIRING  -> arrayOf("EXPIRING", R.drawable.bg_badge_expiring, R.color.dark_yellow, R.color.dark_yellow)
+            BadgeState.EXPIRED   -> arrayOf("EXPIRED",  R.drawable.bg_badge_expired,  R.color.red,         R.color.red)
+            BadgeState.NOT_SET   -> arrayOf("NOT SET",  R.drawable.bg_badge_notset,   R.color.gray,        R.color.gray)
+        }
+        tvBadge.text = text as String
+        tvBadge.setBackgroundResource(badgeDrawable as Int)
+        tvBadge.setTextColor(ContextCompat.getColor(this, textColorRes as Int))
+        vStripe.setBackgroundColor(ContextCompat.getColor(this, stripeColorRes as Int))
+    }
+
+    private fun showDatePicker(
+        field: String,
+        tvDate: TextView,
+        tvCountdown: TextView,
+        tvBadge: TextView,
+        vStripe: View
+    ) {
         val cal = Calendar.getInstance()
         DatePickerDialog(
             this,
@@ -144,7 +204,16 @@ class VehicleDocumentsActivity : AppCompatActivity() {
                 val picked = Calendar.getInstance().apply { set(year, month, day) }
                 val dateStr = dateFormat.format(picked.time)
                 docsRef.child(field).setValue(dateStr)
+<<<<<<< Updated upstream
                     .addOnSuccessListener { updateCard(dateStr, tvDate, tvCountdown) }
+=======
+                    .addOnSuccessListener {
+                        updateCard(dateStr, tvDate, tvCountdown, tvBadge, vStripe)
+                        ReminderScheduler.scheduleDocumentReminder(
+                            this@VehicleDocumentsActivity, vehicleRegistration, field, dateStr
+                        )
+                    }
+>>>>>>> Stashed changes
             },
             cal.get(Calendar.YEAR),
             cal.get(Calendar.MONTH),
