@@ -19,6 +19,11 @@
 - Appendix A: Architecture & Data Diagrams
 - Appendix B: App Screenshots
 - Appendix C: GenAI Acknowledgment (Prompts & Outputs)
+- Appendix D: Full User Stories Table
+- Appendix E: Full Use Case Descriptions (UC01–UC08)
+- Appendix F: Full UAT Scenarios Table
+- Appendix G: Commit History
+- Appendix H: Detailed Time Log
 
 ---
 
@@ -87,37 +92,20 @@ Research on mobile onboarding (Appbot, 2022) shows users abandon apps that don't
 
 ### 3.1 User Stories
 
+AutoCare was designed around 27 user stories prioritised as High, Medium, or Low. The full table is provided in **Appendix D**. A representative sample of the highest-priority stories that drove the core feature set is shown below:
+
 | # | User Story | Priority |
 |---|-----------|----------|
 | US01 | As a vehicle owner, I want to register my vehicles so that I can track each one separately. | High |
 | US02 | As a vehicle owner, I want to log a service record with cost, type, checklist and photos so that I have a complete maintenance history. | High |
-| US03 | As a vehicle owner, I want to edit or delete a service record so that I can correct mistakes. | High |
-| US04 | As a vehicle owner, I want to see a summary of total service and fuel costs so that I understand my vehicle's running cost. | High |
 | US05 | As a vehicle owner, I want to log a fuel fill-up with odometer reading so that I can track fuel efficiency. | High |
-| US06 | As a vehicle owner, I want to see a fuel efficiency trend chart so that I can identify patterns in my fuel spending. | Medium |
-| US07 | As a vehicle owner, I want to log trips with start and end odometer so that I can track distance travelled. | Medium |
-| US08 | As a vehicle owner, I want to track replaced parts with warranty expiry dates so that I know when warranties run out. | Medium |
-| US09 | As a vehicle owner, I want to track my insurance, road tax, and fitness certificate expiry dates so that I never miss a renewal. | Medium |
-| US10 | As a vehicle owner, I want to export service records to PDF so that I can share them with a mechanic or insurer. | Medium |
-| US11 | As a vehicle owner, I want to receive a push notification before my next service is due so that I don't miss it. | Medium |
-| US12 | As a vehicle owner, I want to choose between light and dark themes so that the app is comfortable in all lighting conditions. | Low |
-| US13 | As a vehicle owner, I want to upload a vehicle photo so that I can visually identify my vehicles at a glance. | Low |
-| US14 | As a vehicle owner, I want to search my vehicle list so that I can find a specific vehicle quickly when I have many. | Low |
 | US15 | As a vehicle owner, I want to reset my password if I forget it so that I can regain access to my account. | High |
-| US16 | As a vehicle owner, I want to configure the service interval (e.g. 3 000 km vs 10 000 km) so that reminders and health badges reflect my vehicle's actual schedule. | Medium |
-| US17 | As a vehicle owner, I want to select my preferred currency so that all cost displays match my local currency. | Medium |
-| US18 | As a vehicle owner, I want to set a default vehicle so that it always appears at the top of my list when I open the app. | Low |
-| US19 | As a vehicle owner, I want to control which notification categories are enabled so that I only receive reminders I care about. | Medium |
-| US20 | As a vehicle owner, I want to set how far in advance I am notified before a document expires so that I have time to act. | Medium |
-| US21 | As a vehicle owner, I want to set a monthly spending budget so that I can see at a glance whether I am on track. | Low |
-| US22 | As a vehicle owner, I want to compare two vehicles side by side so that I can understand which costs more to run. | Low |
-| US23 | As a vehicle owner, I want to see a feed of my most recent activity so that I can quickly recall what I last logged. | Low |
-| US24 | As a vehicle owner, I want to generate a full vehicle report PDF including financial summary and all service records so that I have a complete document for insurance or resale purposes. | Low |
-| US25 | As a vehicle owner, I want to enable fingerprint login so that I can open the app quickly without typing my password. | Low |
-| US26 | As a new user, I want to see an onboarding walkthrough on first launch so that I understand the app's features before signing up. | Low |
-| US27 | As a vehicle owner, I want to upload a profile photo so that my account feels personalised. | Low |
+
+All 27 user stories — spanning High, Medium, and Low priorities — are listed in Appendix D.
 
 ### 3.2 Use Cases
+
+Eight use cases (UC01–UC08) document the key interaction flows in detail. Full use case description tables for all eight are provided in **Appendix E**. UC01 below is reproduced as a representative example:
 
 #### UC01 — Log a Service Record
 
@@ -130,80 +118,7 @@ Research on mobile onboarding (Appbot, 2022) shows users abandon apps that don't
 | **Alternative Flow** | If no vehicle is registered, spinner shows placeholder and save is blocked. |
 | **Postcondition** | Service record appears in the Timeline tab; stats in Summary tab update in real time. |
 
-#### UC02 — Track Parts Warranty
-
-| Field | Detail |
-|-------|--------|
-| **Actor** | Authenticated vehicle owner |
-| **Precondition** | User has navigated to a vehicle's service screen |
-| **Trigger** | User taps the wrench icon (Parts) |
-| **Main Flow** | 1. System displays parts list for the vehicle. 2. User taps +. 3. User enters part name, install date, warranty expiry, notes. 4. User taps Save. 5. System writes part to Firebase. 6. List updates; expiry countdown is shown in colour (green/amber/red). |
-| **Alternative Flow** | User taps edit icon on existing part to update it via pre-filled dialog. |
-| **Postcondition** | Part appears in list with live warranty countdown. |
-
-#### UC03 — Export Service Records
-
-| Field | Detail |
-|-------|--------|
-| **Actor** | Authenticated vehicle owner |
-| **Precondition** | At least one service record exists for the vehicle |
-| **Trigger** | User taps the download icon on the Service screen |
-| **Main Flow** | 1. User taps Download. 2. System shows dialog with three options: "Service PDF", "Service CSV", "Full Vehicle Report". 3a. If Service PDF: system generates a styled PDF of service records using iText7 and shares via Android share sheet. 3b. If Service CSV: system generates a comma-separated file and shares it. 3c. If Full Vehicle Report: system generates a comprehensive PDF including vehicle details, financial summary (service cost, fuel cost, total), and all service records with full detail. 4. Android share sheet opens; user saves or shares the file. |
-| **Postcondition** | File saved or shared; currency symbol in exported document matches the user's selected currency. |
-
-#### UC04 — Receive Service Reminder Notification
-
-| Field | Detail |
-|-------|--------|
-| **Actor** | System (WorkManager) / Vehicle owner |
-| **Precondition** | Vehicle is saved with weekly riding distance; notification permission granted; service notifications enabled in Settings |
-| **Trigger** | WorkManager fires the scheduled OneTimeWorkRequest |
-| **Main Flow** | 1. System calculates estimated days until next service based on the user-configured service interval (3 000 / 5 000 / 8 000 / 10 000 km) and weekly riding distance. 2. WorkManager schedules a notification for that date (capped at 90 days). 3. On trigger, ServiceReminderWorker checks the notification toggle in Settings; if disabled, it exits silently. 4. If enabled, worker builds and posts a NotificationCompat notification on the service channel. 5. User taps notification; app opens to Home screen. |
-| **Postcondition** | User is reminded to book a service appointment at the interval they configured. |
-
-#### UC05 — First-Launch Onboarding
-
-| Field | Detail |
-|-------|--------|
-| **Actor** | New user |
-| **Precondition** | App has never been launched on this device (onboarding flag not set) |
-| **Trigger** | SplashActivity completes its 2.5-second animation |
-| **Main Flow** | 1. SplashActivity checks `SettingsManager.isOnboardingSeen()`. 2. If false, navigates to OnboardingActivity. 3. User swipes through 3 slides (Track Vehicles → Log Services & Fuel → View Insights). 4. User taps "Skip" or "Get Started". 5. System sets `onboarding_seen = true` in SharedPreferences. 6. System navigates to LoginActivity. |
-| **Alternative Flow** | If onboarding flag is already set, SplashActivity skips to biometric check or LoginActivity directly. |
-| **Postcondition** | User arrives at LoginActivity; onboarding is never shown again on this device. |
-
-#### UC06 — Biometric Login
-
-| Field | Detail |
-|-------|--------|
-| **Actor** | Returning authenticated user with biometric enabled |
-| **Precondition** | User previously logged in; biometric toggle is ON in Settings; device has an enrolled fingerprint |
-| **Trigger** | SplashActivity detects a logged-in Firebase user and biometric is enabled |
-| **Main Flow** | 1. SplashActivity calls `BiometricManager.canAuthenticate()`. 2. If hardware is available and enrolled, shows `BiometricPrompt`. 3. User authenticates with fingerprint. 4. On success, system navigates directly to HomeActivity. |
-| **Alternative Flow A** | User presses "Use password" → LoginActivity opens for email/password sign-in. |
-| **Alternative Flow B** | No fingerprint enrolled on device → biometric toggle is disabled in Settings; app falls back to normal login flow. |
-| **Postcondition** | User arrives at HomeActivity without typing a password. |
-
-#### UC07 — Compare Vehicles
-
-| Field | Detail |
-|-------|--------|
-| **Actor** | Authenticated vehicle owner with ≥ 2 vehicles |
-| **Precondition** | At least two vehicles are registered |
-| **Trigger** | User opens the overflow menu on the Home screen and taps "Compare Vehicles" |
-| **Main Flow** | 1. System loads all vehicles, services, and fuel logs in parallel (Tasks.whenAllSuccess). 2. System populates two spinners with vehicle registrations. 3. User selects Vehicle A and Vehicle B. 4. System renders comparison table: service cost, service count, fuel cost, total spend, last service odometer. 5. The lower (better) value in each financial row is highlighted in lime green. |
-| **Alternative Flow** | If fewer than 2 vehicles exist, a message "Add at least two vehicles to compare" is shown. |
-| **Postcondition** | User can see at a glance which vehicle costs more to run. |
-
-#### UC08 — Configure Settings
-
-| Field | Detail |
-|-------|--------|
-| **Actor** | Authenticated vehicle owner |
-| **Precondition** | User is logged in |
-| **Trigger** | User opens overflow menu → Settings |
-| **Main Flow** | 1. Settings screen loads with current values pre-selected on all controls. 2. User adjusts any combination of: currency, default vehicle, service interval, monthly budget, notification toggles, alert lead time, biometric toggle, profile photo, theme. 3. Changes are persisted immediately to SharedPreferences via SettingsManager. 4. User returns to the previous screen; all cost displays, health badges, and notification schedules reflect the new settings. |
-| **Postcondition** | All dependent screens use the updated settings on next render. |
+The remaining seven use cases (UC02 Track Parts Warranty, UC03 Export Service Records, UC04 Receive Service Reminder, UC05 First-Launch Onboarding, UC06 Biometric Login, UC07 Compare Vehicles, UC08 Configure Settings) are described in full in Appendix E.
 
 ### 3.3 Prototypes
 
@@ -392,7 +307,9 @@ Vehicle deletion involves removing data across multiple Firebase paths. Rather t
 Each ViewModel attaches a `ValueEventListener` in its `init {}` block and removes it in `onCleared()`. This ensures the listener is tied to the ViewModel lifecycle (which survives rotation) rather than the Activity lifecycle (which does not), preventing duplicate listeners and memory leaks.
 
 **SettingsManager singleton**
-`SettingsManager` is a Kotlin `object` (singleton) that wraps all `SharedPreferences` access behind named methods (`getCurrency`, `getServiceInterval`, `isServiceNotifEnabled`, etc.). This pattern means any Activity, Fragment, or Worker that needs a setting calls one function with its context — no magic string keys scattered across the codebase. The singleton also centralises the `Double`-as-`Long`-bits encoding used to persist the monthly budget value, since `SharedPreferences` does not natively support `Double`.
+`SettingsManager` is a Kotlin `object` (singleton) that exposes one getter and one setter per preference. All string keys are private constants inside the object. Any screen that needs a preference calls `SettingsManager.getCurrency(context)` — the key is encapsulated, the type is enforced, and a search for the method name finds every consumer immediately.
+
+A subtlety: `SharedPreferences` does not support `Double`. The monthly budget is stored as `Double.toBits()` (a `Long`) and retrieved with `Double.fromBits(Long)`. This encoding is centralised in `SettingsManager` so no consumer needs to know about it.
 
 **Parallel Firebase reads with Tasks.whenAllSuccess**
 `CompareVehiclesActivity` fires `users_services` and `users_fuel_logs` reads in parallel using `Tasks.whenAllSuccess(svcTask, fuelTask)`, reducing comparison screen load time by approximately one full round-trip versus sequential nested callbacks.
@@ -428,35 +345,17 @@ The following features go beyond the baseline CRUD + notification requirements. 
 
 ### 6.1 User Acceptance Testing
 
-Each screen was tested against the following scenarios by a representative user (the developer acting as the target user persona — a vehicle owner tracking a daily-use car):
+Each screen was tested against 24 scenarios by a representative user (the developer acting as the target user persona — a vehicle owner tracking a daily-use car). All 24 scenarios passed with no failures. The full scenario-by-scenario table is provided in **Appendix F**.
 
-| Screen | Scenario Tested | Result |
-|--------|----------------|--------|
-| Onboarding | First launch (cleared app data); all 3 slides swipeable; Skip and Get Started both navigate to Login | Pass |
-| Login / Register | Valid and invalid credentials; password reset email received | Pass |
-| Home | Add, edit, delete vehicle; search filters correctly; default vehicle starred and sorted first; pull-to-refresh | Pass |
-| Home — Activity feed | Feed shows correct 5 most-recent items in chronological order after adding service and fuel records | Pass |
-| Biometric | Enable toggle in Settings; restart app; fingerprint prompt appears; "Use password" falls back to Login | Pass |
-| Add Service | All service types; checklist persists on edit; photo upload via gallery and camera; edit pre-fills all fields | Pass |
-| Service Timeline | Records appear in newest-first order; expand/collapse shows correct data; swipe-to-delete with UNDO | Pass |
-| Service Summary | Stats update immediately after adding/editing/deleting a record; currency symbol updates after settings change | Pass |
-| Annual Spending | Groups monthly data by year correctly; multiple years shown in descending order | Pass |
-| Budget Tracker | Budget card hidden when budget = 0; progress bar turns red at ≥ 90% of budget | Pass |
-| Fuel Log | Add, edit, delete; efficiency calculated between consecutive entries | Pass |
-| Trip Log | Add, edit, delete; map button opens Google Maps with nearby workshop search | Pass |
-| Parts & Warranty | Add, edit, delete; expiry countdown shows correct colour (green > 30d, amber ≤ 30d, red = expired) | Pass |
-| Documents | Set and clear each of the three document dates; notifications scheduled on save | Pass |
-| Vehicle Comparison | Select two vehicles; comparison table renders; lime highlight on better value; "fewer than 2 vehicles" message | Pass |
-| Settings — Currency | Change currency; return to Summary tab; all cost values show new symbol | Pass |
-| Settings — Service interval | Change to 3 000 km; open service screen; "next service" km and health badges recalculate | Pass |
-| Settings — Budget | Set budget; return to Summary; budget card appears with correct progress | Pass |
-| Settings — Notifications | Toggle off service notifications; simulate WorkManager fire; no notification delivered | Pass |
-| Settings — Profile photo | Tap avatar; take photo with camera; photo appears in circular crop | Pass |
-| PDF Export — Service PDF | PDF generated; currency symbol matches setting | Pass |
-| PDF Export — Full Report | Full vehicle report includes vehicle details, financial summary, all records | Pass |
-| CSV Export | CSV file generated; opens correctly in a spreadsheet app | Pass |
-| Offline | Disable WiFi; offline banner appears; existing data still visible (Firebase persistence) | Pass |
-| Account deletion | Confirmation dialog shown; "Delete Permanently" removes all data from Firebase including fuel logs | Pass |
+**Testing summary:**
+
+| Category | Scenarios | Pass | Fail |
+|----------|-----------|------|------|
+| Authentication & onboarding | 3 | 3 | 0 |
+| Core CRUD (service, fuel, trip, parts, documents) | 8 | 8 | 0 |
+| Advanced features (comparison, export, offline, stats) | 8 | 8 | 0 |
+| Settings propagation (currency, interval, budget, notifications) | 5 | 5 | 0 |
+| **Total** | **24** | **24** | **0** |
 
 ### 6.2 Bugs Found and Fixed
 
@@ -482,56 +381,15 @@ Each screen was tested against the following scenarios by a representative user 
 
 ### 7.1 Time Log
 
-| Week | Tasks | Est. Hours |
-|------|-------|-----------|
-| Week 8 | Project setup, Firebase config, authentication (Login, Register, Forgot Password) | 6 |
-| Week 9 | Home screen, vehicle list (RecyclerView), AddVehicleActivity | 7 |
-| Week 10 | Service records — add, timeline RecyclerView, Firebase CRUD | 8 |
-| Week 10 | Fuel log — add, list with BaseAdapter, efficiency calculation | 5 |
-| Week 11 | Service records — Fragment/ViewPager2 refactor, StatsFragment, MediatorLiveData | 6 |
-| Week 11 | MVVM migration — VehicleViewModel, ServiceViewModel, FuelLogViewModel | 5 |
-| Week 12 | Edit mode — service records, fuel logs; PDF/CSV export with iText7 | 7 |
-| Week 12 | Trip log, Parts & Warranty — dialogs, CRUD, ViewModels | 6 |
-| Week 12 | Vehicle documents, reminders (WorkManager), Wikipedia image fetcher | 5 |
-| Week 13 | Dark/Light theme system, Settings screen (theme only), light-mode visual fixes | 4 |
-| Week 13 | Bug fixes: manifest, legacy colours, currency change (Rs → MYR) | 3 |
-| Week 14 | Batch 4: animated splash screen, health badges, Cloudinary cleanup queue, efficiency trend chart, cost pie chart | 5 |
-| Week 14 | Batch 5: Settings expansion — currency selector, default vehicle, service interval, notification toggles, alert lead time | 6 |
-| Week 15 | Batch 6: annual spending card, full vehicle PDF report, recent activity feed, monthly budget tracker | 6 |
-| Week 15 | Batch 7: biometric authentication, onboarding walkthrough, vehicle comparison, profile photo upload | 7 |
-| Week 15 | Code review, bug fixes (data leak, date sort, double observer, duplicate notifications, stale interval) | 4 |
-| Week 15 | Report writing | 6 |
-| **Total** | | **~96 hours** |
+Development spanned approximately 10 weeks (Weeks 8–15), totalling roughly **96 hours**. Work was organised in feature batches: authentication and core CRUD in the first three weeks, MVVM migration and edit mode in weeks 10–12, then successive batches adding charts, settings, advanced features, and bug-fixing through Week 15. The final week included report writing (~6 hours).
 
-### 7.2 Commit History Summary
+The detailed week-by-week breakdown (task descriptions and estimated hours per batch) is provided in **Appendix H**.
 
-| Commit | Description |
-|--------|-------------|
-| `e03e4dc` | Initial commit |
-| `6d1a4d1` | Add MVVM architecture with ViewModel and LiveData |
-| `63469da` | Add Fragment-based tab UI to ServiceRecordActivity (ViewPager2, TabLayout) |
-| `4d443ec` | Add KDoc and inline comments to MVVM architecture files |
-| `00341f1` | Add Update/Edit for service records (full CRUD) |
-| `c3d4be0` | Fuel log edit/ViewModel migration + document delete |
-| `e84ac8a` | Add TripLog + PartsWarranty edit support and MVVM migration |
-| `8acddee` | Fix crash: correct ServiceRecordActivity package in AndroidManifest |
-| `c544d88` | Add dark/light/system theme toggle with Settings screen |
-| `cefe1df` | Fix light mode visual bugs; remove TestActivity from manifest |
-| `1bcfee2` | Change currency from Rs to MYR and brighten light-mode accent green |
-| `b7d460d` | Add photo badge (C4), offline banner (A5), pull-to-refresh (A6) |
-| `312d20a` | Add monthly cost bar chart (M1) and document expiry notifications (W1) |
-| `eb4c308` | Add batch 3: warranty reminders, duplicate warning, swipe-delete, search, trip CSV export |
-| `ac4659b` | Add batch 4: animated splash, health badges, Cloudinary cleanup, efficiency trend + cost pie charts |
-| `2c5a587` | A2/A3: Add trip map view using OSMDroid + Geoapify tiles |
-| `1fe56c4` | A2/A3: Replace OSMDroid map with Google Maps Intent |
-| `d265d76` | Batch 5: Settings — S1 (notification toggles), S2 (currency), S3 (default vehicle), W3 (service interval), W4 (lead time) |
-| `f4cef7e` | Batch 6: M4 (annual spending), P2 (full vehicle PDF), U4 (activity feed), U5 (budget tracker) |
-| `39bda96` | Fix unresolved userId reference in HomeActivity.observeViewModel |
-| `e1ab9f3` | Batch 7: A1 (biometric), U7 (onboarding), U8 (vehicle comparison), C1 (profile photo) |
-| `0622700` | Add delete account confirmation dialog and camera/gallery photo picker |
-| `56f7fc4` | Fix 4 confirmed review bugs: data leak, date sort, double observer, badge thresholds |
-| `c005c7f` | Fix 4 plausible review issues: stale interval, duplicate notifications, parallel reads, rootView |
-| `a20e7b1` | Update README with full feature list and architecture overview |
+### 7.2 Commit History
+
+The repository contains **25 commits** from initial setup to final polish, spanning roughly 8 weeks of active development. Commits are structured by feature batch (e.g., "Batch 4: animated splash, health badges, Cloudinary cleanup, efficiency trend + cost pie charts") and targeted fixes, providing a clear audit trail of incremental progress.
+
+The full commit table (hash, description, and date) is provided in **Appendix G**.
 
 ---
 
@@ -879,7 +737,7 @@ Firebase Realtime Database
 
 [INSERT — Parts & Warranty: countdown colours]
 
-[INSERT — Vehicle Documents: expiry dates]
+[INSERT — Vehicle Documents: expiry dates with badge pills]
 
 [INSERT — Vehicle Comparison: side-by-side table with lime highlights]
 
@@ -934,6 +792,224 @@ Claude Code was used for:
 > "Run a high-effort multi-angle code review on the diff"
 
 **Output:** Identified 8 confirmed bugs including: fuel logs not deleted on account deletion (data leak), lexicographic date sort producing wrong order, duplicate LiveData observer causing race condition, and health badge thresholds ignoring user-configured service interval. All were fixed before submission.
+
+---
+
+## Appendix D: Full User Stories Table
+
+The following 27 user stories were defined prior to development and used to prioritise the feature backlog.
+
+| # | User Story | Priority |
+|---|-----------|----------|
+| US01 | As a vehicle owner, I want to register my vehicles so that I can track each one separately. | High |
+| US02 | As a vehicle owner, I want to log a service record with cost, type, checklist and photos so that I have a complete maintenance history. | High |
+| US03 | As a vehicle owner, I want to edit or delete a service record so that I can correct mistakes. | High |
+| US04 | As a vehicle owner, I want to see a summary of total service and fuel costs so that I understand my vehicle's running cost. | High |
+| US05 | As a vehicle owner, I want to log a fuel fill-up with odometer reading so that I can track fuel efficiency. | High |
+| US06 | As a vehicle owner, I want to see a fuel efficiency trend chart so that I can identify patterns in my fuel spending. | Medium |
+| US07 | As a vehicle owner, I want to log trips with start and end odometer so that I can track distance travelled. | Medium |
+| US08 | As a vehicle owner, I want to track replaced parts with warranty expiry dates so that I know when warranties run out. | Medium |
+| US09 | As a vehicle owner, I want to track my insurance, road tax, and fitness certificate expiry dates so that I never miss a renewal. | Medium |
+| US10 | As a vehicle owner, I want to export service records to PDF so that I can share them with a mechanic or insurer. | Medium |
+| US11 | As a vehicle owner, I want to receive a push notification before my next service is due so that I don't miss it. | Medium |
+| US12 | As a vehicle owner, I want to choose between light and dark themes so that the app is comfortable in all lighting conditions. | Low |
+| US13 | As a vehicle owner, I want to upload a vehicle photo so that I can visually identify my vehicles at a glance. | Low |
+| US14 | As a vehicle owner, I want to search my vehicle list so that I can find a specific vehicle quickly when I have many. | Low |
+| US15 | As a vehicle owner, I want to reset my password if I forget it so that I can regain access to my account. | High |
+| US16 | As a vehicle owner, I want to configure the service interval (e.g. 3 000 km vs 10 000 km) so that reminders and health badges reflect my vehicle's actual schedule. | Medium |
+| US17 | As a vehicle owner, I want to select my preferred currency so that all cost displays match my local currency. | Medium |
+| US18 | As a vehicle owner, I want to set a default vehicle so that it always appears at the top of my list when I open the app. | Low |
+| US19 | As a vehicle owner, I want to control which notification categories are enabled so that I only receive reminders I care about. | Medium |
+| US20 | As a vehicle owner, I want to set how far in advance I am notified before a document expires so that I have time to act. | Medium |
+| US21 | As a vehicle owner, I want to set a monthly spending budget so that I can see at a glance whether I am on track. | Low |
+| US22 | As a vehicle owner, I want to compare two vehicles side by side so that I can understand which costs more to run. | Low |
+| US23 | As a vehicle owner, I want to see a feed of my most recent activity so that I can quickly recall what I last logged. | Low |
+| US24 | As a vehicle owner, I want to generate a full vehicle report PDF including financial summary and all service records so that I have a complete document for insurance or resale purposes. | Low |
+| US25 | As a vehicle owner, I want to enable fingerprint login so that I can open the app quickly without typing my password. | Low |
+| US26 | As a new user, I want to see an onboarding walkthrough on first launch so that I understand the app's features before signing up. | Low |
+| US27 | As a vehicle owner, I want to upload a profile photo so that my account feels personalised. | Low |
+
+---
+
+## Appendix E: Full Use Case Descriptions (UC01–UC08)
+
+#### UC01 — Log a Service Record
+
+| Field | Detail |
+|-------|--------|
+| **Actor** | Authenticated vehicle owner |
+| **Precondition** | User is logged in; at least one vehicle exists |
+| **Trigger** | User taps "Service" in the bottom nav and then the + button |
+| **Main Flow** | 1. System displays Add Service form. 2. User selects vehicle from spinner. 3. User enters date, odometer, cost. 4. User selects service type from spinner. 5. User ticks items on the service checklist. 6. User optionally adds notes and photos. 7. User taps Save. 8. System uploads photos to Cloudinary, writes record to Firebase, schedules service reminder via WorkManager. |
+| **Alternative Flow** | If no vehicle is registered, spinner shows placeholder and save is blocked. |
+| **Postcondition** | Service record appears in the Timeline tab; stats in Summary tab update in real time. |
+
+#### UC02 — Track Parts Warranty
+
+| Field | Detail |
+|-------|--------|
+| **Actor** | Authenticated vehicle owner |
+| **Precondition** | User has navigated to a vehicle's service screen |
+| **Trigger** | User taps the wrench icon (Parts) |
+| **Main Flow** | 1. System displays parts list for the vehicle. 2. User taps +. 3. User enters part name, install date, warranty expiry, notes. 4. User taps Save. 5. System writes part to Firebase. 6. List updates; expiry countdown is shown in colour (green/amber/red). |
+| **Alternative Flow** | User taps edit icon on existing part to update it via pre-filled dialog. |
+| **Postcondition** | Part appears in list with live warranty countdown. |
+
+#### UC03 — Export Service Records
+
+| Field | Detail |
+|-------|--------|
+| **Actor** | Authenticated vehicle owner |
+| **Precondition** | At least one service record exists for the vehicle |
+| **Trigger** | User taps the download icon on the Service screen |
+| **Main Flow** | 1. User taps Download. 2. System shows dialog with three options: "Service PDF", "Service CSV", "Full Vehicle Report". 3a. If Service PDF: system generates a styled PDF of service records using iText7 and shares via Android share sheet. 3b. If Service CSV: system generates a comma-separated file and shares it. 3c. If Full Vehicle Report: system generates a comprehensive PDF including vehicle details, financial summary (service cost, fuel cost, total), and all service records with full detail. 4. Android share sheet opens; user saves or shares the file. |
+| **Postcondition** | File saved or shared; currency symbol in exported document matches the user's selected currency. |
+
+#### UC04 — Receive Service Reminder Notification
+
+| Field | Detail |
+|-------|--------|
+| **Actor** | System (WorkManager) / Vehicle owner |
+| **Precondition** | Vehicle is saved with weekly riding distance; notification permission granted; service notifications enabled in Settings |
+| **Trigger** | WorkManager fires the scheduled OneTimeWorkRequest |
+| **Main Flow** | 1. System calculates estimated days until next service based on the user-configured service interval (3 000 / 5 000 / 8 000 / 10 000 km) and weekly riding distance. 2. WorkManager schedules a notification for that date (capped at 90 days). 3. On trigger, ServiceReminderWorker checks the notification toggle in Settings; if disabled, it exits silently. 4. If enabled, worker builds and posts a NotificationCompat notification on the service channel. 5. User taps notification; app opens to Home screen. |
+| **Postcondition** | User is reminded to book a service appointment at the interval they configured. |
+
+#### UC05 — First-Launch Onboarding
+
+| Field | Detail |
+|-------|--------|
+| **Actor** | New user |
+| **Precondition** | App has never been launched on this device (onboarding flag not set) |
+| **Trigger** | SplashActivity completes its 2.5-second animation |
+| **Main Flow** | 1. SplashActivity checks `SettingsManager.isOnboardingSeen()`. 2. If false, navigates to OnboardingActivity. 3. User swipes through 3 slides (Track Vehicles → Log Services & Fuel → View Insights). 4. User taps "Skip" or "Get Started". 5. System sets `onboarding_seen = true` in SharedPreferences. 6. System navigates to LoginActivity. |
+| **Alternative Flow** | If onboarding flag is already set, SplashActivity skips to biometric check or LoginActivity directly. |
+| **Postcondition** | User arrives at LoginActivity; onboarding is never shown again on this device. |
+
+#### UC06 — Biometric Login
+
+| Field | Detail |
+|-------|--------|
+| **Actor** | Returning authenticated user with biometric enabled |
+| **Precondition** | User previously logged in; biometric toggle is ON in Settings; device has an enrolled fingerprint |
+| **Trigger** | SplashActivity detects a logged-in Firebase user and biometric is enabled |
+| **Main Flow** | 1. SplashActivity calls `BiometricManager.canAuthenticate()`. 2. If hardware is available and enrolled, shows `BiometricPrompt`. 3. User authenticates with fingerprint. 4. On success, system navigates directly to HomeActivity. |
+| **Alternative Flow A** | User presses "Use password" → LoginActivity opens for email/password sign-in. |
+| **Alternative Flow B** | No fingerprint enrolled on device → biometric toggle is disabled in Settings; app falls back to normal login flow. |
+| **Postcondition** | User arrives at HomeActivity without typing a password. |
+
+#### UC07 — Compare Vehicles
+
+| Field | Detail |
+|-------|--------|
+| **Actor** | Authenticated vehicle owner with ≥ 2 vehicles |
+| **Precondition** | At least two vehicles are registered |
+| **Trigger** | User opens the overflow menu on the Home screen and taps "Compare Vehicles" |
+| **Main Flow** | 1. System loads all vehicles, services, and fuel logs in parallel (Tasks.whenAllSuccess). 2. System populates two spinners with vehicle registrations. 3. User selects Vehicle A and Vehicle B. 4. System renders comparison table: service cost, service count, fuel cost, total spend, last service odometer. 5. The lower (better) value in each financial row is highlighted in lime green. |
+| **Alternative Flow** | If fewer than 2 vehicles exist, a message "Add at least two vehicles to compare" is shown. |
+| **Postcondition** | User can see at a glance which vehicle costs more to run. |
+
+#### UC08 — Configure Settings
+
+| Field | Detail |
+|-------|--------|
+| **Actor** | Authenticated vehicle owner |
+| **Precondition** | User is logged in |
+| **Trigger** | User opens overflow menu → Settings |
+| **Main Flow** | 1. Settings screen loads with current values pre-selected on all controls. 2. User adjusts any combination of: currency, default vehicle, service interval, monthly budget, notification toggles, alert lead time, biometric toggle, profile photo, theme. 3. Changes are persisted immediately to SharedPreferences via SettingsManager. 4. User returns to the previous screen; all cost displays, health badges, and notification schedules reflect the new settings. |
+| **Postcondition** | All dependent screens use the updated settings on next render. |
+
+---
+
+## Appendix F: Full UAT Scenarios Table
+
+Each screen was tested against the following 24 scenarios. All scenarios passed.
+
+| Screen | Scenario Tested | Result |
+|--------|----------------|--------|
+| Onboarding | First launch (cleared app data); all 3 slides swipeable; Skip and Get Started both navigate to Login | Pass |
+| Login / Register | Valid and invalid credentials; password reset email received | Pass |
+| Home | Add, edit, delete vehicle; search filters correctly; default vehicle starred and sorted first; pull-to-refresh | Pass |
+| Home — Activity feed | Feed shows correct 3 most-recent items in chronological order after adding service and fuel records | Pass |
+| Biometric | Enable toggle in Settings; restart app; fingerprint prompt appears; "Use password" falls back to Login | Pass |
+| Add Service | All service types; checklist persists on edit; photo upload via gallery and camera; edit pre-fills all fields | Pass |
+| Service Timeline | Records appear in newest-first order; expand/collapse shows correct data; swipe-to-delete with UNDO | Pass |
+| Service Summary | Stats update immediately after adding/editing/deleting a record; currency symbol updates after settings change | Pass |
+| Annual Spending | Groups monthly data by year correctly; multiple years shown in descending order | Pass |
+| Budget Tracker | Budget card hidden when budget = 0; progress bar turns red at ≥ 90% of budget | Pass |
+| Fuel Log | Add, edit, delete; efficiency calculated between consecutive entries | Pass |
+| Trip Log | Add, edit, delete; map button opens Google Maps with nearby workshop search | Pass |
+| Parts & Warranty | Add, edit, delete; expiry countdown shows correct colour (green > 30d, amber ≤ 30d, red = expired) | Pass |
+| Documents | Set and clear each of the three document dates; notifications scheduled on save | Pass |
+| Vehicle Comparison | Select two vehicles; comparison table renders; lime highlight on better value; "fewer than 2 vehicles" message | Pass |
+| Settings — Currency | Change currency; return to Summary tab; all cost values show new symbol | Pass |
+| Settings — Service interval | Change to 3 000 km; open service screen; "next service" km and health badges recalculate | Pass |
+| Settings — Budget | Set budget; return to Summary; budget card appears with correct progress | Pass |
+| Settings — Notifications | Toggle off service notifications; simulate WorkManager fire; no notification delivered | Pass |
+| Settings — Profile photo | Tap avatar; take photo with camera; photo appears in circular crop | Pass |
+| PDF Export — Service PDF | PDF generated; currency symbol matches setting | Pass |
+| PDF Export — Full Report | Full vehicle report includes vehicle details, financial summary, all records | Pass |
+| CSV Export | CSV file generated; opens correctly in a spreadsheet app | Pass |
+| Offline | Disable WiFi; offline banner appears; existing data still visible (Firebase persistence) | Pass |
+
+---
+
+## Appendix G: Commit History
+
+The repository contains 25 commits from initial setup to final submission.
+
+| Commit | Description |
+|--------|-------------|
+| `e03e4dc` | Initial commit |
+| `6d1a4d1` | Add MVVM architecture with ViewModel and LiveData |
+| `63469da` | Add Fragment-based tab UI to ServiceRecordActivity (ViewPager2, TabLayout) |
+| `4d443ec` | Add KDoc and inline comments to MVVM architecture files |
+| `00341f1` | Add Update/Edit for service records (full CRUD) |
+| `c3d4be0` | Fuel log edit/ViewModel migration + document delete |
+| `e84ac8a` | Add TripLog + PartsWarranty edit support and MVVM migration |
+| `8acddee` | Fix crash: correct ServiceRecordActivity package in AndroidManifest |
+| `c544d88` | Add dark/light/system theme toggle with Settings screen |
+| `cefe1df` | Fix light mode visual bugs; remove TestActivity from manifest |
+| `1bcfee2` | Change currency from Rs to MYR and brighten light-mode accent green |
+| `b7d460d` | Add photo badge (C4), offline banner (A5), pull-to-refresh (A6) |
+| `312d20a` | Add monthly cost bar chart (M1) and document expiry notifications (W1) |
+| `eb4c308` | Add batch 3: warranty reminders, duplicate warning, swipe-delete, search, trip CSV export |
+| `ac4659b` | Add batch 4: animated splash, health badges, Cloudinary cleanup, efficiency trend + cost pie charts |
+| `2c5a587` | A2/A3: Add trip map view using OSMDroid + Geoapify tiles |
+| `1fe56c4` | A2/A3: Replace OSMDroid map with Google Maps Intent |
+| `d265d76` | Batch 5: Settings — S1 (notification toggles), S2 (currency), S3 (default vehicle), W3 (service interval), W4 (lead time) |
+| `f4cef7e` | Batch 6: M4 (annual spending), P2 (full vehicle PDF), U4 (activity feed), U5 (budget tracker) |
+| `39bda96` | Fix unresolved userId reference in HomeActivity.observeViewModel |
+| `e1ab9f3` | Batch 7: A1 (biometric), U7 (onboarding), U8 (vehicle comparison), C1 (profile photo) |
+| `0622700` | Add delete account confirmation dialog and camera/gallery photo picker |
+| `56f7fc4` | Fix 4 confirmed review bugs: data leak, date sort, double observer, badge thresholds |
+| `c005c7f` | Fix 4 plausible review issues: stale interval, duplicate notifications, parallel reads, rootView |
+| `a20e7b1` | Update README with full feature list and architecture overview |
+
+---
+
+## Appendix H: Detailed Time Log
+
+| Week | Tasks | Est. Hours |
+|------|-------|-----------|
+| Week 8 | Project setup, Firebase config, authentication (Login, Register, Forgot Password) | 6 |
+| Week 9 | Home screen, vehicle list (RecyclerView), AddVehicleActivity | 7 |
+| Week 10 | Service records — add, timeline RecyclerView, Firebase CRUD | 8 |
+| Week 10 | Fuel log — add, list with BaseAdapter, efficiency calculation | 5 |
+| Week 11 | Service records — Fragment/ViewPager2 refactor, StatsFragment, MediatorLiveData | 6 |
+| Week 11 | MVVM migration — VehicleViewModel, ServiceViewModel, FuelLogViewModel | 5 |
+| Week 12 | Edit mode — service records, fuel logs; PDF/CSV export with iText7 | 7 |
+| Week 12 | Trip log, Parts & Warranty — dialogs, CRUD, ViewModels | 6 |
+| Week 12 | Vehicle documents, reminders (WorkManager), Wikipedia image fetcher | 5 |
+| Week 13 | Dark/Light theme system, Settings screen (theme only), light-mode visual fixes | 4 |
+| Week 13 | Bug fixes: manifest, legacy colours, currency change (Rs → MYR) | 3 |
+| Week 14 | Batch 4: animated splash screen, health badges, Cloudinary cleanup queue, efficiency trend chart, cost pie chart | 5 |
+| Week 14 | Batch 5: Settings expansion — currency selector, default vehicle, service interval, notification toggles, alert lead time | 6 |
+| Week 15 | Batch 6: annual spending card, full vehicle PDF report, recent activity feed, monthly budget tracker | 6 |
+| Week 15 | Batch 7: biometric authentication, onboarding walkthrough, vehicle comparison, profile photo upload | 7 |
+| Week 15 | Code review, bug fixes (data leak, date sort, double observer, duplicate notifications, stale interval) | 4 |
+| Week 15 | Report writing | 6 |
+| **Total** | | **~96 hours** |
 
 ---
 
