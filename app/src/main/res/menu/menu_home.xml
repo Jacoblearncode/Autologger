@@ -15,12 +15,6 @@
         android:id="@+id/menu_delete_account"
         android:title="Delete Account" />
     <item
-        android:id="@+id/menu_compare"
-        android:title="Compare Vehicles" />
-    <item
-        android:id="@+id/menu_settings"
-        android:title="Settings" />
-    <item
         android:id="@+id/menu_about"
         android:title="About" />
 </menu>
