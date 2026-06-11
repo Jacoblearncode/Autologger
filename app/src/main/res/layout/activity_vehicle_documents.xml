@@ -9,19 +9,34 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/bg_surface"
-        android:padding="16dp"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:elevation="4dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
+
+        <ImageButton
+            android:id="@+id/btnBackDocs"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_back"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back" />
 
         <TextView
             android:id="@+id/tvAppName"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Vehicle Documents"
             android:textColor="@color/accent_lime"
             android:textSize="20sp"
             android:textStyle="bold"
             android:gravity="center" />
+
+        <View android:layout_width="40dp" android:layout_height="40dp" />
 
     </LinearLayout>
 
@@ -43,14 +58,31 @@
                 android:background="@color/bg_surface"
                 android:elevation="2dp"
                 android:orientation="horizontal"
-                android:padding="16dp"
                 android:layout_marginBottom="12dp">
+
+                <View
+                    android:id="@+id/stripeInsurance"
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent"
+                    android:background="@color/gray" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="12dp"
+                    android:src="@drawable/ic_document"
+                    android:tint="@color/accent_lime"
+                    android:contentDescription="Insurance" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:paddingStart="10dp"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="14dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -66,7 +98,7 @@
                         android:layout_height="wrap_content"
                         android:text="Not set"
                         android:textColor="@color/text_secondary"
-                        android:textSize="18sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:layout_marginTop="2dp" />
 
@@ -75,28 +107,59 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:layout_marginTop="2dp" />
 
                 </LinearLayout>
 
-                <ImageButton
-                    android:id="@+id/btnEditInsurance"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/ic_edit"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Edit insurance date" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="10dp">
 
-                <ImageButton
-                    android:id="@+id/btnDeleteInsurance"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/ic_delete"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Clear insurance date" />
+                    <TextView
+                        android:id="@+id/tvInsuranceBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NOT SET"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp"
+                        android:background="@drawable/bg_badge_notset"
+                        android:textColor="@color/gray"
+                        android:layout_marginBottom="8dp" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <ImageButton
+                            android:id="@+id/btnEditInsurance"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_edit"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Edit insurance date" />
+
+                        <ImageButton
+                            android:id="@+id/btnDeleteInsurance"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_delete"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Clear insurance date" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -108,14 +171,31 @@
                 android:background="@color/bg_surface"
                 android:elevation="2dp"
                 android:orientation="horizontal"
-                android:padding="16dp"
                 android:layout_marginBottom="12dp">
+
+                <View
+                    android:id="@+id/stripeRoadTax"
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent"
+                    android:background="@color/gray" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="12dp"
+                    android:src="@drawable/ic_document"
+                    android:tint="@color/accent_lime"
+                    android:contentDescription="Road Tax" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:paddingStart="10dp"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="14dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -131,7 +211,7 @@
                         android:layout_height="wrap_content"
                         android:text="Not set"
                         android:textColor="@color/text_secondary"
-                        android:textSize="18sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:layout_marginTop="2dp" />
 
@@ -140,28 +220,59 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:layout_marginTop="2dp" />
 
                 </LinearLayout>
 
-                <ImageButton
-                    android:id="@+id/btnEditRoadTax"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/ic_edit"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Edit road tax date" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="10dp">
 
-                <ImageButton
-                    android:id="@+id/btnDeleteRoadTax"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/ic_delete"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Clear road tax date" />
+                    <TextView
+                        android:id="@+id/tvRoadTaxBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NOT SET"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp"
+                        android:background="@drawable/bg_badge_notset"
+                        android:textColor="@color/gray"
+                        android:layout_marginBottom="8dp" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <ImageButton
+                            android:id="@+id/btnEditRoadTax"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_edit"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Edit road tax date" />
+
+                        <ImageButton
+                            android:id="@+id/btnDeleteRoadTax"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_delete"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Clear road tax date" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -173,14 +284,31 @@
                 android:background="@color/bg_surface"
                 android:elevation="2dp"
                 android:orientation="horizontal"
-                android:padding="16dp"
                 android:layout_marginBottom="12dp">
+
+                <View
+                    android:id="@+id/stripeFitness"
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent"
+                    android:background="@color/gray" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="12dp"
+                    android:src="@drawable/ic_document"
+                    android:tint="@color/accent_lime"
+                    android:contentDescription="Fitness Certificate" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:paddingStart="10dp"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="14dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -196,7 +324,7 @@
                         android:layout_height="wrap_content"
                         android:text="Not set"
                         android:textColor="@color/text_secondary"
-                        android:textSize="18sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:layout_marginTop="2dp" />
 
@@ -205,35 +333,66 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:layout_marginTop="2dp" />
 
                 </LinearLayout>
 
-                <ImageButton
-                    android:id="@+id/btnEditFitness"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/ic_edit"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Edit fitness certificate date" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="10dp">
 
-                <ImageButton
-                    android:id="@+id/btnDeleteFitness"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/ic_delete"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Clear fitness certificate date" />
+                    <TextView
+                        android:id="@+id/tvFitnessBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NOT SET"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp"
+                        android:background="@drawable/bg_badge_notset"
+                        android:textColor="@color/gray"
+                        android:layout_marginBottom="8dp" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <ImageButton
+                            android:id="@+id/btnEditFitness"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_edit"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Edit fitness certificate date" />
+
+                        <ImageButton
+                            android:id="@+id/btnDeleteFitness"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_delete"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Clear fitness certificate date" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
 
             </LinearLayout>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Tap the edit icon on any document to set or update its expiry date."
+                android:text="Tap the edit icon to set or update an expiry date. You will be reminded before it expires."
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:gravity="center"

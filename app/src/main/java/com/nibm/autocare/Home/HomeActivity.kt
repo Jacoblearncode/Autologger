@@ -63,6 +63,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var connectivityManager: ConnectivityManager
     private lateinit var networkCallback: ConnectivityManager.NetworkCallback
     private var searchQuery = ""
+    private var feedLoaded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,7 +94,10 @@ class HomeActivity : AppCompatActivity() {
         viewModel = ViewModelProvider(this, VehicleViewModelFactory(userId))[VehicleViewModel::class.java]
         observeViewModel()
 
-        swipeRefresh.setOnRefreshListener { viewModel.refresh() }
+        swipeRefresh.setOnRefreshListener {
+            feedLoaded = false
+            viewModel.refresh()
+        }
 
         requestNotificationPermissionIfNeeded()
 
@@ -185,7 +189,10 @@ class HomeActivity : AppCompatActivity() {
             vehicleAdapter.submitList(filtered)
             updateEmptyState(filtered, searchQuery.isNotEmpty())
             val uid = FirebaseAuth.getInstance().currentUser?.uid
-            if (allVehicles.isNotEmpty() && uid != null) loadActivityFeed(uid)
+            if (allVehicles.isNotEmpty() && uid != null && !feedLoaded) {
+                feedLoaded = true
+                loadActivityFeed(uid)
+            }
         }
 
         viewModel.toastMessage.observe(this) { message ->
@@ -205,7 +212,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun loadActivityFeed(userId: String) {
-        val card = findViewById<android.view.View>(R.id.cardRecentActivity)
+        val card = findViewById<View>(R.id.cardRecentActivity)
         val ll = findViewById<android.widget.LinearLayout>(R.id.llActivityFeed)
         val db = com.google.firebase.database.FirebaseDatabase.getInstance()
 
@@ -232,7 +239,7 @@ class HomeActivity : AppCompatActivity() {
                         val dateFmt = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
                         val recent = items.sortedByDescending {
                             try { dateFmt.parse(it.date) } catch (_: Exception) { null }
-                        }.take(5)
+                        }.take(3)
                         if (recent.isEmpty()) return@addOnSuccessListener
                         ll.removeAllViews()
                         recent.forEach { item ->
@@ -243,19 +250,26 @@ class HomeActivity : AppCompatActivity() {
                             val tvLabel = android.widget.TextView(this).apply {
                                 text = item.label
                                 textSize = 12f
-                                setTextColor(androidx.core.content.ContextCompat.getColor(this@HomeActivity, R.color.text_primary))
-                                layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                                setTextColor(ContextCompat.getColor(this@HomeActivity, R.color.text_primary))
+                                layoutParams = android.widget.LinearLayout.LayoutParams(
+                                    0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f
+                                )
                             }
                             val tvDate = android.widget.TextView(this).apply {
                                 text = item.date
                                 textSize = 11f
-                                setTextColor(androidx.core.content.ContextCompat.getColor(this@HomeActivity, R.color.text_secondary))
+                                setTextColor(ContextCompat.getColor(this@HomeActivity, R.color.text_secondary))
                             }
                             row.addView(tvLabel)
                             row.addView(tvDate)
                             ll.addView(row)
                         }
-                        card.visibility = android.view.View.VISIBLE
+                        card.visibility = View.VISIBLE
+                        val tvViewAll = findViewById<android.widget.TextView>(R.id.tvViewAllActivity)
+                        tvViewAll.visibility = View.VISIBLE
+                        tvViewAll.setOnClickListener {
+                            startActivity(Intent(this, ActivityHistoryActivity::class.java))
+                        }
                     }
             }
     }
@@ -286,7 +300,6 @@ class HomeActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 searchQuery = s?.toString()?.trim()?.lowercase() ?: ""
-                // Re-filter current list through the observer
                 val current = viewModel.vehicles.value ?: emptyList()
                 val filtered = if (searchQuery.isEmpty()) current
                 else current.filter { it.registrationNumber.lowercase().contains(searchQuery) }
@@ -324,6 +337,7 @@ class HomeActivity : AppCompatActivity() {
         popupMenu.inflate(R.menu.menu_home)
         popupMenu.setOnMenuItemClickListener { item: MenuItem ->
             when (item.itemId) {
+                R.id.menu_activity_history -> { startActivity(Intent(this, ActivityHistoryActivity::class.java)); true }
                 R.id.menu_compare -> { startActivity(Intent(this, CompareVehiclesActivity::class.java)); true }
                 R.id.menu_settings -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
                 R.id.menu_logout -> { logout(); true }
