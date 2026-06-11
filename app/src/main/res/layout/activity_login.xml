@@ -67,6 +67,28 @@
         android:layout_marginBottom="@dimen/default_margin"/>
 
     <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="— or —"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/btnGoogleSignIn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sign in with Google"
+        android:backgroundTint="@color/white"
+        android:textColor="@color/text_primary"
+        android:padding="@dimen/default_padding"
+        android:layout_marginBottom="@dimen/default_margin"
+        android:drawableStart="@drawable/ic_google"
+        android:drawablePadding="8dp" />
+
+    <TextView
         android:id="@+id/tvRegister"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

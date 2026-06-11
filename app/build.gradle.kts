@@ -95,4 +95,7 @@ dependencies {
     implementation ("androidx.recyclerview:recyclerview:1.3.2")
     implementation ("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation ("androidx.biometric:biometric:1.1.0")
+
+    implementation ("com.google.android.gms:play-services-auth:21.2.0")
+    implementation ("com.google.firebase:firebase-auth-ktx")
 }
