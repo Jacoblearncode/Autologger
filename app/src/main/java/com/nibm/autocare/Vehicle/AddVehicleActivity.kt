@@ -184,8 +184,11 @@ class AddVehicleActivity : AppCompatActivity() {
     }
 
     private fun openGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        galleryLauncher.launch(intent)
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+        }
+        galleryLauncher.launch(Intent.createChooser(intent, "Select photo"))
     }
 
     private fun checkCameraPermissionAndOpen() {

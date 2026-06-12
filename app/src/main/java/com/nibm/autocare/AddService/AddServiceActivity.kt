@@ -398,10 +398,12 @@ class AddServiceActivity : AppCompatActivity() {
     }
 
     private fun openGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
             putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         }
-        galleryLauncher.launch(intent)
+        galleryLauncher.launch(Intent.createChooser(intent, "Select photos"))
     }
 
     private fun openCamera() {
