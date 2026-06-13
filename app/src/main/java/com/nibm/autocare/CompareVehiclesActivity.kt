@@ -58,7 +58,8 @@ class CompareVehiclesActivity : AppCompatActivity() {
         db.child("users_vehicles").child(uid).get().addOnSuccessListener { vehSnap ->
             regs = vehSnap.children.mapNotNull {
                 val reg = it.child("registrationNumber").getValue(String::class.java) ?: return@mapNotNull null
-                val photo = it.child("photoUrl").getValue(String::class.java) ?: ""
+                val photo = it.child("photoUrl").getValue(String::class.java)?.takeIf { u -> u.isNotEmpty() }
+                    ?: it.child("defaultImageUrl").getValue(String::class.java) ?: ""
                 photoByReg[reg] = photo
                 reg
             }
