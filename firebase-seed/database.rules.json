@@ -36,6 +36,12 @@
         ".write": "$uid === auth.uid"
       }
     },
+    "users_vehicle_documents": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid"
+      }
+    },
     "vehicles": {
       ".read": "auth !== null",
       ".write": false
