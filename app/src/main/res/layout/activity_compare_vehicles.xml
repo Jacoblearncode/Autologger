@@ -71,6 +71,39 @@
 
     </LinearLayout>
 
+    <!-- Vehicle photos -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        android:paddingBottom="8dp">
+
+        <ImageView
+            android:id="@+id/ivVehicleA"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_empty_vehicle"
+            android:contentDescription="Vehicle A photo" />
+
+        <View
+            android:layout_width="48dp"
+            android:layout_height="0dp" />
+
+        <ImageView
+            android:id="@+id/ivVehicleB"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_empty_vehicle"
+            android:contentDescription="Vehicle B photo" />
+
+    </LinearLayout>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"

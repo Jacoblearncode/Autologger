@@ -5,11 +5,13 @@ import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
@@ -30,10 +32,13 @@ class CompareVehiclesActivity : AppCompatActivity() {
 
     private val uid by lazy { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
     private val statsByReg = mutableMapOf<String, VehicleStats>()
+    private val photoByReg = mutableMapOf<String, String>()
     private var regs = listOf<String>()
 
     private lateinit var spinnerA: Spinner
     private lateinit var spinnerB: Spinner
+    private lateinit var ivVehicleA: ImageView
+    private lateinit var ivVehicleB: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +47,8 @@ class CompareVehiclesActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
         spinnerA = findViewById(R.id.spinnerVehicleA)
         spinnerB = findViewById(R.id.spinnerVehicleB)
+        ivVehicleA = findViewById(R.id.ivVehicleA)
+        ivVehicleB = findViewById(R.id.ivVehicleB)
 
         loadData()
     }
@@ -50,7 +57,10 @@ class CompareVehiclesActivity : AppCompatActivity() {
         val db = FirebaseDatabase.getInstance().reference
         db.child("users_vehicles").child(uid).get().addOnSuccessListener { vehSnap ->
             regs = vehSnap.children.mapNotNull {
-                it.child("registrationNumber").getValue(String::class.java)
+                val reg = it.child("registrationNumber").getValue(String::class.java) ?: return@mapNotNull null
+                val photo = it.child("photoUrl").getValue(String::class.java) ?: ""
+                photoByReg[reg] = photo
+                reg
             }
             if (regs.size < 2) {
                 showNotEnough()
@@ -115,6 +125,9 @@ class CompareVehiclesActivity : AppCompatActivity() {
         val container = findViewById<LinearLayout>(R.id.comparisonContainer)
         container.removeAllViews()
 
+        loadVehiclePhoto(photoByReg[regA], ivVehicleA)
+        loadVehiclePhoto(photoByReg[regB], ivVehicleB)
+
         // Lower total cost / fewer services is "better" → highlight the winner in lime.
         addRow(container, "Service cost", "$cur ${fmt(a.serviceCost)}", "$cur ${fmt(b.serviceCost)}",
             a.serviceCost <= b.serviceCost)
@@ -172,6 +185,17 @@ class CompareVehiclesActivity : AppCompatActivity() {
             setBackgroundColor(ContextCompat.getColor(this@CompareVehiclesActivity, R.color.gray_300))
         }
         parent.addView(divider)
+    }
+
+    private fun loadVehiclePhoto(url: String?, iv: ImageView) {
+        if (!url.isNullOrEmpty()) {
+            Glide.with(this).load(url).centerCrop()
+                .placeholder(R.drawable.ic_empty_vehicle)
+                .error(R.drawable.ic_empty_vehicle)
+                .into(iv)
+        } else {
+            iv.setImageResource(R.drawable.ic_empty_vehicle)
+        }
     }
 
     private fun showNotEnough() {
