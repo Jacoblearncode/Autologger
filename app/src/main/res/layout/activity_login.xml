@@ -95,4 +95,40 @@
         android:text="Don't have an account? Register"
         android:textColor="@color/purple_700"
         android:layout_marginTop="@dimen/default_margin"/>
+
+    <!-- Biometric login — visible only when enabled and a cached session exists -->
+    <LinearLayout
+        android:id="@+id/layoutBiometric"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginTop="24dp"
+        android:visibility="gone">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/gray_300"
+            android:layout_marginBottom="20dp" />
+
+        <ImageButton
+            android:id="@+id/btnBiometric"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:background="@drawable/circle_gray_bg"
+            android:src="@drawable/ic_fingerprint"
+            android:scaleType="centerInside"
+            android:padding="12dp"
+            android:contentDescription="Login with fingerprint" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Use fingerprint"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
 </LinearLayout>
