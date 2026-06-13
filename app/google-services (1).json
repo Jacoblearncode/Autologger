@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "341070687885",
+    "firebase_url": "https://autologger-583c7-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "autologger-583c7",
+    "storage_bucket": "autologger-583c7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:341070687885:android:3ee68529663e7cbde6bcc4",
+        "android_client_info": {
+          "package_name": "com.nibm.autocare"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "341070687885-6dq96gei81096glgcmkbv5opnfr8sv3j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nibm.autocare",
+            "certificate_hash": "85ff8c0969c6defc4fa8139608a45d299cf35dde"
+          }
+        },
+        {
+          "client_id": "341070687885-c44l7b2q335uvqvg3msfvtas699nvptj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAb5QFQLBwa8Gpz8T8D6-HUGybd1CNDc5U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "341070687885-c44l7b2q335uvqvg3msfvtas699nvptj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
