@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -204,12 +205,16 @@ class VehicleDocumentsActivity : AppCompatActivity() {
             { _, year, month, day ->
                 val picked = Calendar.getInstance().apply { set(year, month, day) }
                 val dateStr = dateFormat.format(picked.time)
+                updateCard(dateStr, tvDate, tvCountdown, tvBadge, vStripe)
                 docsRef.child(field).setValue(dateStr)
                     .addOnSuccessListener {
-                        updateCard(dateStr, tvDate, tvCountdown, tvBadge, vStripe)
                         ReminderScheduler.scheduleDocumentReminder(
                             this@VehicleDocumentsActivity, vehicleRegistration, field, dateStr
                         )
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this@VehicleDocumentsActivity,
+                            "Save failed: ${e.message}", Toast.LENGTH_LONG).show()
                     }
             },
             cal.get(Calendar.YEAR),
