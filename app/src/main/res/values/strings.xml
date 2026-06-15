@@ -6,4 +6,20 @@
     <string name="download_pdf">Download PDF</string>
     <string name="update_vehicle">Update Vehicle</string>
     <string name="save_vehicle">Save Vehicle</string>
+
+    <!-- About screen -->
+    <string name="about_title">About</string>
+    <string name="about_back">Back</string>
+    <string name="about_logo_desc">AutoCare logo</string>
+    <string name="about_version">Version 1.0</string>
+    <string name="about_tagline">Your personal vehicle maintenance companion</string>
+    <string name="about_developer_label">DEVELOPER</string>
+    <string name="about_developer_name">Jacob Jayenrajan Pillai</string>
+    <string name="about_developer_id">Student ID: 105986053</string>
+    <string name="about_developer_unit">COS30017 — Mobile Application Development</string>
+    <string name="about_features_label">FEATURES</string>
+    <string name="about_features_body">• Service records with photos and checklists\n• Fuel log with efficiency tracking\n• Trip log and parts warranty tracking\n• Document expiry tracking (insurance, road tax)\n• Monthly budget tracker and annual spending\n• Vehicle comparison side-by-side\n• Push notifications for service and renewals\n• PDF and CSV export\n• Biometric login\n• Dark / Light theme support</string>
+    <string name="about_built_label">BUILT WITH</string>
+    <string name="about_built_body">• Kotlin + MVVM architecture\n• Firebase Realtime Database\n• Cloudinary (photo storage)\n• WorkManager (background notifications)\n• MPAndroidChart (graphs)\n• iText7 (PDF generation)\n• AndroidX Biometric</string>
+    <string name="about_footer">Made for COS30017 Assignment 3 — Swinburne University of Technology</string>
 </resources>

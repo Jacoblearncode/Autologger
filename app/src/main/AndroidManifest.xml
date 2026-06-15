@@ -97,6 +97,10 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".AboutActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".CompareVehiclesActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
