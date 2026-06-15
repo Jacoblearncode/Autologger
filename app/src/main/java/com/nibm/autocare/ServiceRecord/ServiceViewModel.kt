@@ -15,11 +15,17 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 /**
+ *  * Why MVVM over MVC or MVP?
+ *  * 1. Lifecycle safety: ViewModels survive configuration changes (screen rotation) without
+ *  *    re-fetching data from Firebase.
+ *  * 2. Separation of concerns: Activities only touch the UI; all Firebase logic is in the ViewModel.
+ *  * 3. LiveData reactivity: UI automatically updates when data changes without polling.
+
  * ViewModel for the Service Records screen, shared between ServicesFragment (Tab 1)
  * and StatsFragment (Tab 2) via the parent Activity's ViewModelStore.
- *
  * Maintains two independent data sources — service records (real-time) and fuel logs
  * (one-shot) — and combines them into a single CombinedStats value using MediatorLiveData.
+ * Also computes derived data for the efficiency trend line chart and monthly spend bar chart.
  */
 class ServiceViewModel(
     private val userId: String,
@@ -37,9 +43,11 @@ class ServiceViewModel(
     val fuelData: LiveData<FuelData> = _fuelData
 
     /**
-     * MediatorLiveData that recomputes combined spend and efficiency metrics whenever
-     * either service records or fuel data changes. Both sources are observed internally
-     * so observers of combinedStats don't need to watch two separate streams.
+     * What is MediatorLiveData and where do you use it?
+     * ServiceViewModel.combinedStats — it adds _serviceRecords and _fuelData as two sources.
+     * When either one changes, it recomputes a CombinedStats value. The Summary tab needs
+     * both (service cost + fuel cost = total spend, cost-per-km). Without MediatorLiveData
+     * you'd need nested observers which creates race conditions.
      */
     val combinedStats: LiveData<CombinedStats> = MediatorLiveData<CombinedStats>().apply {
         fun recompute() {

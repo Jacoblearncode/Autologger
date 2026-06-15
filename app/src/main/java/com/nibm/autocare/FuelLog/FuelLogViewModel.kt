@@ -17,6 +17,12 @@ import com.nibm.autocare.model.FuelLog
  * without the Activity managing connection lifecycle directly.
  * Efficiency (km/L) is computed here after each data load so the Activity
  * receives a ready-to-display list.
+ *
+ * Why MVVM over MVC or MVP?
+ * 1. Lifecycle safety: ViewModels survive configuration changes (screen rotation) without
+ *    re-fetching data from Firebase.
+ * 2. Separation of concerns: Activities only touch the UI; all Firebase logic is in the ViewModel.
+ * 3. LiveData reactivity: UI automatically updates when data changes without polling.
  */
 class FuelLogViewModel(private val userId: String) : ViewModel() {
 

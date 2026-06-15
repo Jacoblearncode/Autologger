@@ -49,7 +49,9 @@ class ServiceRecordActivity : AppCompatActivity() {
             Manifest.permission.READ_EXTERNAL_STORAGE
         )
     }
-
+//calls ViewModelProvider(this)[ServiceViewModel::class.java] to create the ViewModel
+// before any Fragments are attached, so they can retrieve it via requireActivity()
+// same instance from the Activity's store, not a new one.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_service_record)

@@ -22,6 +22,12 @@ import kotlin.coroutines.resume
  * real time without the Activity managing database connections directly.
  * The listener is attached when the ViewModel is first created and removed in
  * onCleared() to prevent memory leaks when the Activity is destroyed.
+ *
+ * Why MVVM over MVC or MVP?
+ * 1. Lifecycle safety: ViewModels survive configuration changes (screen rotation) without
+ *    re-fetching data from Firebase.
+ * 2. Separation of concerns: Activities only touch the UI; all Firebase logic is in the ViewModel.
+ * 3. LiveData reactivity: UI automatically updates when data changes without polling.
  */
 class VehicleViewModel(private val userId: String) : ViewModel() {
 
