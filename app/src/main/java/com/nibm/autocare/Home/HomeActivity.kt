@@ -340,6 +340,7 @@ class HomeActivity : AppCompatActivity() {
                 R.id.menu_activity_history -> { startActivity(Intent(this, ActivityHistoryActivity::class.java)); true }
                 R.id.menu_compare -> { startActivity(Intent(this, CompareVehiclesActivity::class.java)); true }
                 R.id.menu_settings -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
+                R.id.menu_about -> { startActivity(Intent(this, AboutActivity::class.java)); true }
                 R.id.menu_logout -> { logout(); true }
                 R.id.menu_delete_account -> { deleteAccount(); true }
                 else -> false
