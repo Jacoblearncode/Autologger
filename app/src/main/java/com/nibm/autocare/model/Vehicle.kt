@@ -8,5 +8,6 @@ data class Vehicle(
     val currentMileage: Int = 0,
     val weeklyRidingDistance: Int = 0,
     val photoUrl: String = "",
-    val defaultImageUrl: String = ""
+    val defaultImageUrl: String = "",
+    val vehicleId: String = ""
 )

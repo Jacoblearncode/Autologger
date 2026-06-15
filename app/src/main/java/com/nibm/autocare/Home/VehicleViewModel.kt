@@ -74,7 +74,8 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
                         vehicleSnapshot.child("currentMileage").getValue(Int::class.java) ?: 0,
                         vehicleSnapshot.child("weeklyRidingDistance").getValue(Int::class.java) ?: 0,
                         vehicleSnapshot.child("photoUrl").getValue(String::class.java) ?: "",
-                        vehicleSnapshot.child("defaultImageUrl").getValue(String::class.java) ?: ""
+                        vehicleSnapshot.child("defaultImageUrl").getValue(String::class.java) ?: "",
+                        vehicleSnapshot.key ?: ""
                     ))
                 }
             }
@@ -136,18 +137,13 @@ class VehicleViewModel(private val userId: String) : ViewModel() {
      * then the vehicle node) runs sequentially without nested callbacks.
      */
     fun deleteVehicle(vehicle: Vehicle) {
-        viewModelScope.launch {
-            val vehicleId = findVehicleId(vehicle.registrationNumber)
-            if (vehicleId == null) {
-                _toastMessage.value = "Vehicle not found"
-                return@launch
-            }
-            database.reference.child("users_services").child(userId)
-                .child(vehicle.registrationNumber).removeValue()
-            database.reference.child("users_vehicles").child(userId)
-                .child(vehicleId).removeValue()
-            _toastMessage.value = "Vehicle deleted"
-        }
+        val vehicleId = vehicle.vehicleId.ifEmpty { return }
+        database.reference.child("users_services").child(userId)
+            .child(vehicle.registrationNumber).removeValue()
+        database.reference.child("users_vehicles").child(userId)
+            .child(vehicleId).removeValue()
+            .addOnSuccessListener { _toastMessage.value = "Vehicle deleted" }
+            .addOnFailureListener { _toastMessage.value = "Delete failed: ${it.message}" }
     }
 
     /**
