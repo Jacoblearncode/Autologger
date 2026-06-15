@@ -38,13 +38,29 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="SERVICES"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.1" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="SERVICES"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.1" />
+                        <TextView
+                            android:id="@+id/infoSvcTotal"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" ⓘ"
+                            android:textColor="@color/accent_lime"
+                            android:textSize="10sp"
+                            android:padding="2dp" />
+                    </LinearLayout>
+
                     <TextView
                         android:id="@+id/tvSvcTotal"
                         android:layout_width="wrap_content"
@@ -60,13 +76,29 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="FUEL"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.1" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="FUEL"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.1" />
+                        <TextView
+                            android:id="@+id/infoFuelTotal"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" ⓘ"
+                            android:textColor="@color/accent_lime"
+                            android:textSize="10sp"
+                            android:padding="2dp" />
+                    </LinearLayout>
+
                     <TextView
                         android:id="@+id/tvFuelTotal"
                         android:layout_width="wrap_content"
@@ -82,13 +114,29 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="TOTAL"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.1" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="TOTAL"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.1" />
+                        <TextView
+                            android:id="@+id/infoCombinedTotal"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" ⓘ"
+                            android:textColor="@color/accent_lime"
+                            android:textSize="10sp"
+                            android:padding="2dp" />
+                    </LinearLayout>
+
                     <TextView
                         android:id="@+id/tvCombinedTotal"
                         android:layout_width="wrap_content"
@@ -132,13 +180,29 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="AVG EFFICIENCY"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.1" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="AVG EFFICIENCY"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.1" />
+                        <TextView
+                            android:id="@+id/infoAvgEfficiency"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" ⓘ"
+                            android:textColor="@color/accent_lime"
+                            android:textSize="10sp"
+                            android:padding="2dp" />
+                    </LinearLayout>
+
                     <TextView
                         android:id="@+id/tvAvgEfficiency"
                         android:layout_width="wrap_content"
@@ -154,13 +218,29 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="COST / KM"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.1" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="COST / KM"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.1" />
+                        <TextView
+                            android:id="@+id/infoCostPerKm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" ⓘ"
+                            android:textColor="@color/accent_lime"
+                            android:textSize="10sp"
+                            android:padding="2dp" />
+                    </LinearLayout>
+
                     <TextView
                         android:id="@+id/tvCostPerKm"
                         android:layout_width="wrap_content"
@@ -190,13 +270,29 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="NEXT SERVICE"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.1" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="NEXT SERVICE"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.1" />
+                        <TextView
+                            android:id="@+id/infoNextService"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" ⓘ"
+                            android:textColor="@color/accent_lime"
+                            android:textSize="10sp"
+                            android:padding="2dp" />
+                    </LinearLayout>
+
                     <TextView
                         android:id="@+id/tvNextService"
                         android:layout_width="wrap_content"
@@ -212,13 +308,29 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="RECORDS"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.1" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="RECORDS"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.1" />
+                        <TextView
+                            android:id="@+id/infoRecordCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" ⓘ"
+                            android:textColor="@color/accent_lime"
+                            android:textSize="10sp"
+                            android:padding="2dp" />
+                    </LinearLayout>
+
                     <TextView
                         android:id="@+id/tvRecordCount"
                         android:layout_width="wrap_content"

@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -108,6 +109,78 @@ class StatsFragment : Fragment() {
                 tvNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
             }
         }
+
+        wireInfoButtons(view)
+    }
+
+    private fun wireInfoButtons(view: View) {
+        view.findViewById<TextView>(R.id.infoSvcTotal).setOnClickListener {
+            info(
+                "Service Cost",
+                "The total of all service record costs logged for this vehicle.\n\n" +
+                "Tip: Add costs for every visit — oil changes, tyres, repairs — " +
+                "to get an accurate picture of your maintenance spend."
+            )
+        }
+        view.findViewById<TextView>(R.id.infoFuelTotal).setOnClickListener {
+            info(
+                "Fuel Cost",
+                "The total amount spent on fuel across all entries in the Fuel Log for this vehicle.\n\n" +
+                "Tip: Log every fill-up with the odometer reading to unlock efficiency tracking."
+            )
+        }
+        view.findViewById<TextView>(R.id.infoCombinedTotal).setOnClickListener {
+            info(
+                "Total Spend",
+                "Service costs + fuel costs combined — your all-time recorded spend on this vehicle.\n\n" +
+                "Tip: Compare this figure month-over-month by checking the Fuel Log and service dates " +
+                "to spot periods of higher spending."
+            )
+        }
+        view.findViewById<TextView>(R.id.infoAvgEfficiency).setOnClickListener {
+            info(
+                "Average Fuel Efficiency",
+                "Calculated from consecutive fuel log entries:\n" +
+                "km travelled between fills ÷ litres added at each fill-up.\n\n" +
+                "Requires at least 2 fuel log entries with odometer readings.\n\n" +
+                "Tip: A declining efficiency number can signal a dirty air filter, " +
+                "under-inflated tyres, or a need for a service."
+            )
+        }
+        view.findViewById<TextView>(R.id.infoCostPerKm).setOnClickListener {
+            info(
+                "Cost per Kilometre",
+                "Total spend (service + fuel) divided by the kilometres driven since your " +
+                "earliest recorded odometer reading.\n\n" +
+                "Tip: The lower this number, the cheaper each km costs to run. " +
+                "A sudden rise often means a large unplanned repair — worth noting in your service records."
+            )
+        }
+        view.findViewById<TextView>(R.id.infoNextService).setOnClickListener {
+            info(
+                "Next Service",
+                "Estimated as 5,000 km above the odometer reading of your most recent service record.\n\n" +
+                "• Lime colour — within 1,000 km, service soon\n" +
+                "• Red / OVERDUE — you have passed the threshold\n\n" +
+                "Tip: Update your service odometer reading each visit to keep this countdown accurate."
+            )
+        }
+        view.findViewById<TextView>(R.id.infoRecordCount).setOnClickListener {
+            info(
+                "Service Records",
+                "The total number of service records logged for this vehicle.\n\n" +
+                "Tip: A complete history increases resale value — log every visit, " +
+                "even minor ones like tyre rotations or fluid top-ups."
+            )
+        }
+    }
+
+    private fun info(title: String, message: String) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("Got it", null)
+            .show()
     }
 
     // M4 — Annual spending breakdown
